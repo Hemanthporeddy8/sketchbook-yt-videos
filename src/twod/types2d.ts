@@ -25,6 +25,7 @@ export interface Actor2D {
   app: Appearance;
   species: Species;
   x: number;
+  y?: number;
   facing: 1 | -1;
   scale: number;
   /** 0 = background (behind objects), 1 = middle, 2 = foreground */
@@ -63,6 +64,7 @@ export interface Clip2D {
   phase: number;
   toX: number; // walk target x (walk clips only)
   say: string; // speech bubble text
+  facing?: 1 | -1; // custom facing direction for this clip (1: right, -1: left)
 }
 
 export interface SceneClip2D {

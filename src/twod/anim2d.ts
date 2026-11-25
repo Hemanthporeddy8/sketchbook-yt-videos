@@ -121,7 +121,7 @@ function poseOf(c: Clip2D, tl: number, speedMs: number, gait: number): Pose2D {
     face.smile = Math.max(face.smile, 0.55);
     face.blinkL = Math.max(face.blinkL, 0);
   }
-  return { angles, py: loco.py * METER, face };
+  return { angles, py: -loco.py * METER, face };
 }
 
 function blend(a: Pose2D, b: Pose2D, w: number): Pose2D {
@@ -145,31 +145,35 @@ export function evalActor(a: Actor2D, clips: Clip2D[], t: number): ActorFrame {
   let speedMs = 0;
   let gait = 0;
   for (const c of clips) {
-    if (c.kind !== "walk") continue;
-    const from = x;
-    const to = c.toX;
-    if (t >= c.start + c.duration) {
-      x = to;
-      if (to !== from) facing = to > from ? 1 : -1;
-      continue;
+    if (c.kind === "walk") {
+      const from = x;
+      const to = c.toX;
+      if (t >= c.start + c.duration) {
+        x = to;
+        if (to !== from) facing = to > from ? 1 : -1;
+      } else if (t >= c.start) {
+        const p = clamp01((t - c.start) / c.duration);
+        const e = smooth(p);
+        const de = (6 * p * (1 - p)) / c.duration;
+        const dist = to - from;
+        x = from + dist * e;
+        if (dist !== 0) facing = dist > 0 ? 1 : -1;
+        speedMs = (Math.abs(dist) * de) / METER;
+        gait = Math.abs(x - from) / METER / WALK_CYCLE;
+      }
     }
-    if (t >= c.start) {
-      const p = clamp01((t - c.start) / c.duration);
-      const e = smooth(p);
-      const de = (6 * p * (1 - p)) / c.duration;
-      const dist = to - from;
-      x = from + dist * e;
-      if (dist !== 0) facing = dist > 0 ? 1 : -1;
-      speedMs = (Math.abs(dist) * de) / METER;
-      gait = Math.abs(x - from) / METER / WALK_CYCLE;
+    if (c.facing && t >= c.start) {
+      facing = c.facing;
     }
-    break;
   }
 
   let active: Clip2D | null = null;
   for (const c of clips) if (t >= c.start && t < c.start + c.duration) active = c;
   const walking = active?.kind === "walk";
   const hidden = active?.kind === "rest" || active?.stance === "rest";
+  if (active?.facing) {
+    facing = active.facing;
+  }
   let pose = active ? poseOf(active, t - active.start, walking ? speedMs : 0, walking ? gait : 0) : poseOf(IDLE, t, 0, 0);
 
   if (active && t - active.start < XFADE) {

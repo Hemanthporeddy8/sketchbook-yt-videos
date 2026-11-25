@@ -145,7 +145,7 @@ export function Stage2D() {
         if (!d) continue;
         const frame = evalActor(a, sortedClips(st.clips, a.id), clock2d.t);
         frame.species = a.species;
-        applyFigure(d, frame, gyRef.current, a.scale);
+        applyFigure(d, frame, gyRef.current + (a.y ?? 0), a.scale);
       }
       for (const o of st.objects) {
         const el = objRefs.get(o.id);
@@ -198,7 +198,7 @@ export function Stage2D() {
     if (!d) return;
     const p = toPt(e);
     if (!p) return;
-    if (d.kind === "actor") patchActor(d.id, { x: Math.round(p.x + d.dx) });
+    if (d.kind === "actor") patchActor(d.id, { x: Math.round(p.x + d.dx), y: Math.round(p.y - gyRef.current + d.dy) });
     else patchObject(d.id, { x: Math.round(p.x + d.dx), y: Math.round(p.y + d.dy) });
   };
 
@@ -239,7 +239,7 @@ export function Stage2D() {
                     select({ kind: "actor", id: a.id });
                     if (playing) return;
                     const p = toPt(e);
-                    if (p) dragRef.current = { kind: "actor", id: a.id, dx: a.x - p.x, dy: 0 };
+                    if (p) dragRef.current = { kind: "actor", id: a.id, dx: a.x - p.x, dy: (a.y ?? 0) - (p.y - gyRef.current) };
                   }}
                 />
               ))}
@@ -271,7 +271,7 @@ export function Stage2D() {
                     select({ kind: "actor", id: a.id });
                     if (playing) return;
                     const p = toPt(e);
-                    if (p) dragRef.current = { kind: "actor", id: a.id, dx: a.x - p.x, dy: 0 };
+                    if (p) dragRef.current = { kind: "actor", id: a.id, dx: a.x - p.x, dy: (a.y ?? 0) - (p.y - gyRef.current) };
                   }}
                 />
               ))}

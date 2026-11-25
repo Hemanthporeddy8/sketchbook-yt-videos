@@ -620,13 +620,16 @@ function ActorEditor({ id }: { id: string }) {
         <Field label="X position">
           <NumberInput value={Math.round(actor.x)} step={10} onChange={(v) => patchActor(id, { x: v })} />
         </Field>
-        <Field label="Facing">
-          <div className="flex gap-1">
-            <button onClick={() => patchActor(id, { facing: -1 })} className={cn("flex-1 rounded-md border py-1 text-[11px]", actor.facing === -1 ? "border-[#e87d0d] text-[#ffb36b]" : "border-white/10 text-slate-400")}>◀ Left</button>
-            <button onClick={() => patchActor(id, { facing: 1 })} className={cn("flex-1 rounded-md border py-1 text-[11px]", actor.facing === 1 ? "border-[#e87d0d] text-[#ffb36b]" : "border-white/10 text-slate-400")}>Right ▶</button>
-          </div>
+        <Field label="Y position / Height">
+          <NumberInput value={Math.round(actor.y ?? 0)} step={5} onChange={(v) => patchActor(id, { y: v })} />
         </Field>
       </div>
+      <Field label="Facing">
+        <div className="flex gap-1">
+          <button onClick={() => patchActor(id, { facing: -1 })} className={cn("flex-1 rounded-md border py-1 text-[11px]", actor.facing === -1 ? "border-[#e87d0d] bg-[#e87d0d]/15 text-[#ffb36b] font-bold" : "border-white/10 text-slate-400 hover:text-slate-200")}>◀ Left</button>
+          <button onClick={() => patchActor(id, { facing: 1 })} className={cn("flex-1 rounded-md border py-1 text-[11px]", actor.facing === 1 ? "border-[#e87d0d] bg-[#e87d0d]/15 text-[#ffb36b] font-bold" : "border-white/10 text-slate-400 hover:text-slate-200")}>Right ▶</button>
+        </div>
+      </Field>
       <Slider label="Size" value={actor.scale} min={0.5} max={2.2} step={0.05} onChange={(v) => patchActor(id, { scale: v })} format={(v) => `${v.toFixed(2)}×`} />
       <Field label="Layer">
         <Select value={actor.depth} onChange={(v) => patchActor(id, { depth: v })} options={[{ value: 0, label: "Background (behind objects)" }, { value: 1, label: "Middle" }, { value: 2, label: "Foreground" }]} />
@@ -741,6 +744,34 @@ function ClipEditor({ id }: { id: string }) {
             <Toggle label="Talking (talking expressions)" checked={clip.talk} onChange={(v) => p({ talk: v })} />
           </div>
         </>
+      )}
+      {!isRest && clip.kind !== "drive" && (
+        <Field label="Turn / Facing direction">
+          <div className="flex gap-1">
+            <button
+              onClick={() => p({ facing: -1 })}
+              className={cn(
+                "flex-1 rounded-md border py-1.5 text-[11px] font-semibold transition",
+                clip.facing === -1
+                  ? "border-[#e87d0d] bg-[#e87d0d]/20 text-[#ffb36b]"
+                  : "border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200",
+              )}
+            >
+              ◀ Turn Left
+            </button>
+            <button
+              onClick={() => p({ facing: 1 })}
+              className={cn(
+                "flex-1 rounded-md border py-1.5 text-[11px] font-semibold transition",
+                clip.facing === 1
+                  ? "border-[#e87d0d] bg-[#e87d0d]/20 text-[#ffb36b]"
+                  : "border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200",
+              )}
+            >
+              Turn Right ▶
+            </button>
+          </div>
+        </Field>
       )}
       {!isRest && (
         <Field label="Speech bubble">
