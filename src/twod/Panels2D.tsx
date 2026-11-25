@@ -1,8 +1,8 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Copy, ImagePlus, Paintbrush, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
+import { Copy, ImagePlus, Mic, Paintbrush, Play, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
 import { useStudio2d, type Tab2D, DEFAULT_DRAFT } from "./store2d";
-import type { Appearance, Species } from "./types2d";
+import type { Appearance, Species, AudioClip2D } from "./types2d";
 import {
   EXPRESSION_OPTIONS, ANIMAL_EXPRESSION_OPTIONS, GESTURE_OPTIONS, OBJECT_FAMILIES, OBJECT_PALETTES, OBJECT_VARIANTS,
   SCENE_KINDS, SCENE_PALETTES, DEFAULT_SCENE_PALETTE, SKIN_TONES, HAIR_COLORS, HAIR_STYLES, CLOTH, SHOE_COLORS, EYE_COLORS, BUILDS, HATS,
@@ -833,6 +833,7 @@ export function Inspector2D() {
   const sceneClip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.sceneClips.find((c) => c.id === s.selected?.id) : undefined));
   const obj = useStudio2d((s) => (s.selected?.kind === "object" ? s.objects.find((o) => o.id === s.selected?.id) : undefined));
   const clip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.clips.find((c) => c.id === s.selected?.id) : undefined));
+  const audioClip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.audioClips.find((c) => c.id === s.selected?.id) : undefined));
   const removeSelected = useStudio2d((s) => s.removeSelected);
   const addActor = useStudio2d((s) => s.addActor);
   const patchSceneClip = useStudio2d((s) => s.patchSceneClip);
@@ -878,6 +879,7 @@ export function Inspector2D() {
         {actor && <ActorEditor id={actor.id} />}
         {obj && <ObjectEditor id={obj.id} />}
         {clip && <ClipEditor id={clip.id} />}
+        {audioClip && <AudioClipEditor id={audioClip.id} />}
       </div>
     </aside>
   );
@@ -1294,6 +1296,78 @@ function ClipEditor({ id }: { id: string }) {
       )}
       <button onClick={removeSelected} className="flex w-full items-center justify-center gap-1 rounded-md bg-red-500/15 py-1.5 text-[11px] text-red-300 hover:bg-red-500/25">
         <Trash2 className="h-3 w-3" /> Delete clip
+      </button>
+    </Section>
+  );
+}
+
+function AudioClipEditor({ id }: { id: string }) {
+  const audioClip = useStudio2d((s) => s.audioClips.find((c) => c.id === id));
+  const actor = useStudio2d((s) => s.actors.find((a) => a.id === audioClip?.actorId));
+  const patchAudioClip = useStudio2d((s) => s.patchAudioClip);
+  const removeSelected = useStudio2d((s) => s.removeSelected);
+  const removeAudioClip = useStudio2d((s) => s.removeAudioClip);
+
+  if (!audioClip) return null;
+  const p = (patch: Partial<AudioClip2D>) => patchAudioClip(id, patch);
+
+  return (
+    <Section title={`🎙️ Dub Voice · ${actor?.name ?? "Character"}`}>
+      <div className="rounded-lg border border-violet-500/30 bg-violet-950/20 p-2.5 text-xs text-slate-300 space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-white truncate">{audioClip.label ?? "Dub Take"}</span>
+          <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-mono text-violet-300">
+            {audioClip.voicePreset ?? "Voice"}
+          </span>
+        </div>
+        {audioClip.mocapFrames && audioClip.mocapFrames.length > 0 && (
+          <div className="text-[10px] text-emerald-300 flex items-center gap-1 pt-1">
+            <Sparkles className="h-3 w-3" />
+            <span>Includes Face Motion Capture ({audioClip.mocapFrames.length} keyframes)</span>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Start (s)">
+          <NumberInput value={audioClip.start} min={0} step={0.1} onChange={(v) => p({ start: Math.max(0, v) })} />
+        </Field>
+        <Field label="Length (s)">
+          <NumberInput value={audioClip.duration} min={0.2} step={0.1} onChange={(v) => p({ duration: Math.max(0.2, v) })} />
+        </Field>
+      </div>
+
+      <Slider
+        label="Volume"
+        value={audioClip.volume ?? 1}
+        min={0}
+        max={1.5}
+        step={0.05}
+        onChange={(v) => p({ volume: v })}
+        format={(v) => `${Math.round(v * 100)}%`}
+      />
+
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={() => {
+            const a = new Audio(audioClip.audioUrl);
+            a.volume = Math.max(0, Math.min(1, audioClip.volume ?? 1));
+            void a.play();
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-md bg-white/10 py-2 text-xs font-semibold text-white hover:bg-white/15 transition-colors"
+        >
+          <Play className="h-3.5 w-3.5 fill-white" /> Preview Audio
+        </button>
+      </div>
+
+      <button
+        onClick={() => {
+          removeAudioClip(id);
+          removeSelected();
+        }}
+        className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-500/20 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors"
+      >
+        <Trash2 className="h-3.5 w-3.5" /> Delete Dub Voice Take
       </button>
     </Section>
   );

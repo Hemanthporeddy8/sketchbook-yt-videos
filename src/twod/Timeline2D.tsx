@@ -38,6 +38,8 @@ export function Timeline2D() {
   const addSceneClip = useStudio2d((s) => s.addSceneClip);
   const patchSceneClip = useStudio2d((s) => s.patchSceneClip);
   const patchAudioClip = useStudio2d((s) => s.patchAudioClip);
+  const removeAudioClip = useStudio2d((s) => s.removeAudioClip);
+  const removeSelected = useStudio2d((s) => s.removeSelected);
   const t = useStudio2d((s) => s.t);
   const playing = useStudio2d((s) => s.playing);
   const loop = useStudio2d((s) => s.loop);
@@ -52,6 +54,18 @@ export function Timeline2D() {
   const setT = useStudio2d((s) => s.setT);
   const [pps, setPps] = useState(70);
   const [dubOpen, setDubOpen] = useState(false);
+
+  // Keyboard shortcut to delete selected clips or audio takes
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        removeSelected();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [removeSelected]);
 
   const dur = projectDuration(clips, audioClips);
   const width = Math.max(dur + 3, 12) * pps;
@@ -312,10 +326,29 @@ export function Timeline2D() {
                 {actorAudio.length > 0 && (
                   <div className="flex h-7 border-t border-black/20 bg-violet-950/15">
                     <div
-                      className="sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-black/40 bg-[#181a20] px-3 text-[10px] text-violet-300 font-medium"
+                      className="sticky left-0 z-10 flex shrink-0 items-center justify-between border-r border-black/40 bg-[#181a20] px-2 text-[10px] text-violet-300 font-medium"
                       style={{ width: LABEL_W }}
                     >
-                      <Mic className="h-2.5 w-2.5" /> Dub Voice
+                      <button
+                        onClick={() => {
+                          if (actorAudio[0]) setTime(actorAudio[0].start);
+                        }}
+                        className="flex items-center gap-1 truncate hover:text-white"
+                        title="Jump playhead to this character's dub take"
+                      >
+                        <Mic className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">Dub ({actorAudio.length})</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actorAudio.forEach((ac) => removeAudioClip(ac.id));
+                        }}
+                        className="rounded px-1 text-[9px] text-rose-400 hover:bg-rose-500/25 hover:text-rose-200"
+                        title="Remove all dub takes on this character"
+                      >
+                        Clear
+                      </button>
                     </div>
                     <div className="relative" style={{ width }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e); }} onPointerMove={(e) => { if (e.buttons === 1) scrub(e); }}>
                       {actorAudio.map((ac) => (
@@ -328,17 +361,27 @@ export function Timeline2D() {
                             beginDrag(e, pps, (dx) => patchAudioClip(ac.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
                           }}
                           className={cn(
-                            "absolute top-0.5 flex h-6 cursor-grab select-none items-center overflow-hidden rounded border border-violet-400/60 bg-gradient-to-r from-violet-600/70 to-indigo-600/70 px-1.5 text-[9px] text-white shadow-sm",
+                            "absolute top-0.5 flex h-6 cursor-grab select-none items-center overflow-hidden rounded border border-violet-400/60 bg-gradient-to-r from-violet-600/70 to-indigo-600/70 pl-1.5 pr-0.5 text-[9px] text-white shadow-sm",
                             selected?.kind === "clip" && selected.id === ac.id && "ring-2 ring-white",
                           )}
-                          style={{ left: ac.start * pps, width: Math.max(36, ac.duration * pps) }}
+                          style={{ left: ac.start * pps, width: Math.max(48, ac.duration * pps) }}
                           title={`🎙️ ${ac.label ?? "Dub Take"} [${ac.voicePreset ?? "Voice"}] (${ac.duration.toFixed(1)}s)`}
                         >
-                          <span className="truncate font-medium flex items-center gap-1">
-                            <span>🎙️</span>
-                            <span className="font-semibold text-violet-200">[{ac.voicePreset ?? "Voice"}]</span>
-                            <span>{ac.duration.toFixed(1)}s</span>
+                          <span className="truncate font-medium flex items-center gap-1 flex-1 min-w-0">
+                            <span className="shrink-0">🎙️</span>
+                            <span className="font-semibold text-violet-200 truncate">[{ac.voicePreset ?? "Voice"}]</span>
+                            <span className="shrink-0">{ac.duration.toFixed(1)}s</span>
                           </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeAudioClip(ac.id);
+                            }}
+                            className="z-10 ml-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-white/70 hover:bg-rose-600 hover:text-white"
+                            title="Delete this dub voice take"
+                          >
+                            ✕
+                          </button>
                           <span
                             className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize bg-white/40"
                             onPointerDown={(e) => {
