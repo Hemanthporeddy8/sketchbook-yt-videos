@@ -104,3 +104,15 @@ export interface Preview2D {
   expression: string;
   until: number;
 }
+
+export interface AudioClip2D {
+  id: string;
+  actorId: string;
+  start: number;
+  duration: number;
+  audioUrl: string; // Blob URL
+  voicePreset?: string;
+  volume?: number;
+  label?: string;
+  mocapFrames?: { t: number; face: Record<string, number>; head?: number }[];
+}

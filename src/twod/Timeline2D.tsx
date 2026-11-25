@@ -1,5 +1,5 @@
 import { useState, type PointerEvent as RPointerEvent } from "react";
-import { Footprints, Moon, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
+import { Footprints, Mic, Moon, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
 import { useStudio2d } from "./store2d";
 import { SCENE_KINDS } from "./gen2d";
 import { clock2d, projectDuration } from "./anim2d";
@@ -7,6 +7,7 @@ import { ACTION_NAME } from "./gen2d";
 import { cn } from "../utils/cn";
 import { fmtTime } from "../lib/util";
 import type { Clip2D } from "./types2d";
+import { LiveDubModal } from "./LiveDubModal";
 
 const LABEL_W = 140;
 
@@ -31,10 +32,12 @@ function clipLabel(c: Clip2D) {
 export function Timeline2D() {
   const actors = useStudio2d((s) => s.actors);
   const clips = useStudio2d((s) => s.clips);
+  const audioClips = useStudio2d((s) => s.audioClips);
   const sceneClips = useStudio2d((s) => s.sceneClips);
   const scene = useStudio2d((s) => s.scene);
   const addSceneClip = useStudio2d((s) => s.addSceneClip);
   const patchSceneClip = useStudio2d((s) => s.patchSceneClip);
+  const patchAudioClip = useStudio2d((s) => s.patchAudioClip);
   const t = useStudio2d((s) => s.t);
   const playing = useStudio2d((s) => s.playing);
   const loop = useStudio2d((s) => s.loop);
@@ -48,8 +51,9 @@ export function Timeline2D() {
   const setLoop = useStudio2d((s) => s.setLoop);
   const setT = useStudio2d((s) => s.setT);
   const [pps, setPps] = useState(70);
+  const [dubOpen, setDubOpen] = useState(false);
 
-  const dur = projectDuration(clips);
+  const dur = projectDuration(clips, audioClips);
   const width = Math.max(dur + 3, 12) * pps;
 
   const setTime = (v: number) => {
@@ -184,6 +188,13 @@ export function Timeline2D() {
           >
             <span className="text-sm leading-none">🎬</span> Scene
           </button>
+          <button
+            onClick={() => setDubOpen(true)}
+            className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
+            title="Open live dubbing studio & webcam face motion capture"
+          >
+            <Mic className="h-3.5 w-3.5 text-white animate-pulse" /> Dub & Face Mocap
+          </button>
         </div>
       </div>
 
@@ -244,56 +255,106 @@ export function Timeline2D() {
             </div>
           </div>
 
-          {actors.map((a) => (
-            <div key={a.id} className="flex h-12 border-b border-black/30">
-              <button
-                onClick={() => select({ kind: "actor", id: a.id })}
-                className={cn(
-                  "sticky left-0 z-10 flex shrink-0 items-center truncate border-r border-black/40 bg-[#1f2126] px-2 text-left text-[11px] text-slate-200",
-                  selected?.id === a.id && "text-[#ffb36b]",
-                )}
-                style={{ width: LABEL_W }}
-              >
-                {a.name}
-              </button>
-              <div className="relative" style={{ width }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e); }} onPointerMove={(e) => { if (e.buttons === 1) scrub(e); }}>
-                {clips
-                  .filter((c) => c.actorId === a.id)
-                  .map((c) => (
+          {actors.map((a) => {
+            const actorAudio = audioClips.filter((c) => c.actorId === a.id);
+            return (
+              <div key={a.id} className="flex flex-col border-b border-black/30">
+                <div className="flex h-11">
+                  <button
+                    onClick={() => select({ kind: "actor", id: a.id })}
+                    className={cn(
+                      "sticky left-0 z-10 flex shrink-0 items-center truncate border-r border-black/40 bg-[#1f2126] px-2 text-left text-[11px] text-slate-200",
+                      selected?.id === a.id && "text-[#ffb36b]",
+                    )}
+                    style={{ width: LABEL_W }}
+                  >
+                    {a.name}
+                  </button>
+                  <div className="relative" style={{ width }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e); }} onPointerMove={(e) => { if (e.buttons === 1) scrub(e); }}>
+                    {clips
+                      .filter((c) => c.actorId === a.id)
+                      .map((c) => (
+                        <div
+                          key={c.id}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            select({ kind: "clip", id: c.id });
+                            const s0 = c.start;
+                            beginDrag(e, pps, (dx) => patchClip(c.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
+                          }}
+                          className={cn(
+                            "absolute top-1 flex h-8 cursor-grab select-none items-center overflow-hidden rounded-md border px-2 text-[10px]",
+                            c.kind === "rest" || c.stance === "rest"
+                              ? "border-indigo-400/50 bg-slate-800/90 text-indigo-200 border-dashed"
+                              : c.kind === "walk"
+                                ? "border-emerald-400/60 bg-emerald-600/50 text-white"
+                                : "border-[#e87d0d]/60 bg-[#e87d0d]/35 text-white",
+                            selected?.kind === "clip" && selected.id === c.id && "ring-2 ring-white",
+                          )}
+                          style={{ left: c.start * pps, width: Math.max(30, c.duration * pps) }}
+                          title={clipLabel(c)}
+                        >
+                          <span className="truncate font-semibold">{clipLabel(c)}</span>
+                          <span
+                            className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize bg-white/30"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              const d0 = c.duration;
+                              beginDrag(e, pps, (dx) => patchClip(c.id, { duration: Math.max(0.2, Math.round((d0 + dx) * 10) / 10) }));
+                            }}
+                          />
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Actor Dub Audio Subtrack */}
+                {actorAudio.length > 0 && (
+                  <div className="flex h-7 border-t border-black/20 bg-violet-950/15">
                     <div
-                      key={c.id}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        select({ kind: "clip", id: c.id });
-                        const s0 = c.start;
-                        beginDrag(e, pps, (dx) => patchClip(c.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
-                      }}
-                      className={cn(
-                        "absolute top-1.5 flex h-9 cursor-grab select-none items-center overflow-hidden rounded-md border px-2 text-[10px]",
-                        c.kind === "rest" || c.stance === "rest"
-                          ? "border-indigo-400/50 bg-slate-800/90 text-indigo-200 border-dashed"
-                          : c.kind === "walk"
-                            ? "border-emerald-400/60 bg-emerald-600/50 text-white"
-                            : "border-[#e87d0d]/60 bg-[#e87d0d]/35 text-white",
-                        selected?.kind === "clip" && selected.id === c.id && "ring-2 ring-white",
-                      )}
-                      style={{ left: c.start * pps, width: Math.max(30, c.duration * pps) }}
-                      title={clipLabel(c)}
+                      className="sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-black/40 bg-[#181a20] px-3 text-[10px] text-violet-300 font-medium"
+                      style={{ width: LABEL_W }}
                     >
-                      <span className="truncate font-semibold">{clipLabel(c)}</span>
-                      <span
-                        className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize bg-white/30"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          const d0 = c.duration;
-                          beginDrag(e, pps, (dx) => patchClip(c.id, { duration: Math.max(0.2, Math.round((d0 + dx) * 10) / 10) }));
-                        }}
-                      />
+                      <Mic className="h-2.5 w-2.5" /> Dub Voice
                     </div>
-                  ))}
+                    <div className="relative" style={{ width }} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e); }} onPointerMove={(e) => { if (e.buttons === 1) scrub(e); }}>
+                      {actorAudio.map((ac) => (
+                        <div
+                          key={ac.id}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            select({ kind: "clip", id: ac.id });
+                            const s0 = ac.start;
+                            beginDrag(e, pps, (dx) => patchAudioClip(ac.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
+                          }}
+                          className={cn(
+                            "absolute top-0.5 flex h-6 cursor-grab select-none items-center overflow-hidden rounded border border-violet-400/60 bg-gradient-to-r from-violet-600/70 to-indigo-600/70 px-1.5 text-[9px] text-white shadow-sm",
+                            selected?.kind === "clip" && selected.id === ac.id && "ring-2 ring-white",
+                          )}
+                          style={{ left: ac.start * pps, width: Math.max(36, ac.duration * pps) }}
+                          title={`🎙️ ${ac.label ?? "Dub Take"} [${ac.voicePreset ?? "Voice"}] (${ac.duration.toFixed(1)}s)`}
+                        >
+                          <span className="truncate font-medium flex items-center gap-1">
+                            <span>🎙️</span>
+                            <span className="font-semibold text-violet-200">[{ac.voicePreset ?? "Voice"}]</span>
+                            <span>{ac.duration.toFixed(1)}s</span>
+                          </span>
+                          <span
+                            className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize bg-white/40"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              const d0 = ac.duration;
+                              beginDrag(e, pps, (dx) => patchAudioClip(ac.id, { duration: Math.max(0.2, Math.round((d0 + dx) * 10) / 10) }));
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Movable object tracks */}
           {objects.length > 0 && (
@@ -340,6 +401,8 @@ export function Timeline2D() {
           <div className="pointer-events-none absolute bottom-0 top-0 z-20 w-px bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]" style={{ left: LABEL_W + t * pps }} />
         </div>
       </div>
+
+      <LiveDubModal open={dubOpen} onClose={() => setDubOpen(false)} />
     </section>
   );
 }

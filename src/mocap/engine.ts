@@ -63,6 +63,10 @@ let poseLM: PoseLandmarker | null = null;
 let faceLM: FaceLandmarker | null = null;
 let loadPromise: Promise<void> | null = null;
 
+export function getFaceLandmarker() {
+  return faceLM;
+}
+
 async function withDelegate<T>(fn: (delegate: "GPU" | "CPU") => Promise<T>): Promise<T> {
   try {
     return await fn("GPU");
@@ -118,8 +122,10 @@ function charVec(a: LM, b: LM, aspect: number) {
 const DRIVEN = ["hips", "spine", "lUpperArm", "lLowerArm", "rUpperArm", "rLowerArm", "lUpperLeg", "lLowerLeg", "rUpperLeg", "rLowerLeg"];
 const IDENT = new THREE.Quaternion();
 
-function solveFace(fl: LM[], bs: Cat[] | undefined, aspect: number): { state: FaceState; head: THREE.Quaternion | null } {
+export function solveFace(fl: LM[], bs: Cat[] | undefined, aspect: number): { state: FaceState; head: THREE.Quaternion | null; roll: number } {
   const g = (n: string) => bs?.find((c) => c.categoryName === n)?.score ?? 0;
+  const lookX = Math.max(-1, Math.min(1, (g("eyeLookOutLeft") - g("eyeLookInLeft") + g("eyeLookInRight") - g("eyeLookOutRight")) * 1.6));
+  const lookY = Math.max(-1, Math.min(1, (g("eyeLookUpLeft") + g("eyeLookUpRight") - g("eyeLookDownLeft") - g("eyeLookDownRight")) * 1.6));
   const state: FaceState = {
     ...NEUTRAL_FACE,
     blinkL: g("eyeBlinkLeft"),
@@ -130,6 +136,8 @@ function solveFace(fl: LM[], bs: Cat[] | undefined, aspect: number): { state: Fa
     browUp: g("browInnerUp"),
     angry: (g("browDownLeft") + g("browDownRight")) / 2,
     wide: (g("eyeWideLeft") + g("eyeWideRight")) / 2,
+    lookX,
+    lookY,
   };
 
   // Head pose from landmarks: yaw (nose vs ear midline), pitch (nose-eye vs nose-chin), roll (eye line)
@@ -141,7 +149,7 @@ function solveFace(fl: LM[], bs: Cat[] | undefined, aspect: number): { state: Fa
   const pitch = Math.max(-0.8, Math.min(0.8, (0.33 - ratio) * 5));
   const roll = Math.max(-0.6, Math.min(0.6, -Math.atan2((fl[263].y - fl[33].y) * 1, (fl[263].x - fl[33].x) * aspect)));
   const head = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, roll, "YXZ"));
-  return { state, head };
+  return { state, head, roll };
 }
 
 function solveBody(rig: RigInstance, lm: LM[], aspect: number, headQ: THREE.Quaternion | null): Record<string, THREE.Quaternion> {

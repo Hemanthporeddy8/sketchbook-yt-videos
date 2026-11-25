@@ -256,8 +256,11 @@ export function evalObj(o: Obj2D, clips: Clip2D[], t: number): { x: number; bob:
 }
 
 /** Length of the whole project in seconds (at least 6 s, plus a little tail). */
-export function projectDuration(clips: Clip2D[]) {
+export function projectDuration(clips: Clip2D[], audioClips?: { start: number; duration: number }[]) {
   let end = 6;
   for (const c of clips) end = Math.max(end, c.start + c.duration);
+  if (audioClips) {
+    for (const a of audioClips) end = Math.max(end, a.start + a.duration);
+  }
   return end + 0.5;
 }

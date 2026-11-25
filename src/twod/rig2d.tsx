@@ -943,10 +943,11 @@ function applyFace(d: FigDom, s: NonNullable<ActorFrame["face"]>) {
     const headY = -86;
     const isBird = d.species === "bird";
 
-    // Eyes blink
-    const ry = Math.max(0.8, (isBird ? 6 : 7) * (1 - L) * (1 + s.wide * 0.3));
-    d.eyeL?.setAttribute("ry", String(ry));
-    d.eyeR?.setAttribute("ry", String(ry));
+    // Eyes blink independently (allows winking)
+    const ryL = Math.max(0.8, (isBird ? 6 : 7) * (1 - s.blinkL) * (1 + s.wide * 0.3));
+    const ryR = Math.max(0.8, (isBird ? 6 : 7) * (1 - s.blinkR) * (1 + s.wide * 0.3));
+    d.eyeL?.setAttribute("ry", String(ryL));
+    d.eyeR?.setAttribute("ry", String(ryR));
 
     // Pupils track
     const lookX = s.lookX * 2.2;
@@ -979,9 +980,10 @@ function applyFace(d: FigDom, s: NonNullable<ActorFrame["face"]>) {
     }
   } else {
     // Humans and girls
-    const ry = String(Math.max(1.2, 12 * (1 - L) * (1 + s.wide * 0.35)));
-    d.eyeL?.setAttribute("ry", ry);
-    d.eyeR?.setAttribute("ry", ry);
+    const ryL = String(Math.max(1.2, 12 * (1 - s.blinkL) * (1 + s.wide * 0.35)));
+    const ryR = String(Math.max(1.2, 12 * (1 - s.blinkR) * (1 + s.wide * 0.35)));
+    d.eyeL?.setAttribute("ry", ryL);
+    d.eyeR?.setAttribute("ry", ryR);
     const look = `translate(${s.lookX * 2.4} ${s.lookY * 2.4})`;
     d.pupilL?.setAttribute("transform", look);
     d.pupilR?.setAttribute("transform", look);

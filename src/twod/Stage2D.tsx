@@ -10,6 +10,8 @@ import { clock2d, dimsOf, evalActor, evalObj, groundOf, projectDuration, sceneAt
 import { setStageSvg } from "./recorder2d";
 import { fitAspect } from "../three/SceneView";
 import type { Obj2D } from "./types2d";
+import { liveMocap2D } from "./mocap2d";
+import { voiceEngine } from "./voiceEngine";
 
 type Drag = { kind: "actor" | "object"; id: string; dx: number; dy: number };
 
@@ -140,11 +142,66 @@ export function Stage2D() {
         const remove = st.removeActorById;
         deadActors.forEach((a) => remove(a.id));
       }
+      if (st.audioClips && st.audioClips.length > 0) {
+        voiceEngine.syncPlayback(st.audioClips, clock2d.t, st.playing);
+      } else {
+        voiceEngine.stopAllPlayback();
+      }
+
       for (const a of st.actors) {
         const d = figRegistry.get(a.id);
         if (!d) continue;
         const frame = evalActor(a, sortedClips(st.clips, a.id), clock2d.t);
         frame.species = a.species;
+
+        // 1. Live Mocap & Live Dubbing Lip-Sync
+        if (st.liveMocapActorId === a.id) {
+          if (liveMocap2D.active && liveMocap2D.face) {
+            frame.face = {
+              ...frame.face,
+              ...liveMocap2D.face,
+            };
+            if (liveMocap2D.headRoll) {
+              frame.angles.head = (frame.angles.head ?? 0) + liveMocap2D.headRoll;
+            }
+          }
+          const micVol = voiceEngine.getMicVolume();
+          if (micVol > 0.04) {
+            frame.face.jaw = Math.max(frame.face.jaw ?? 0, Math.min(1, micVol * 3.5));
+            frame.face.talk = frame.face.jaw > 0.15;
+          }
+        }
+
+        // 2. Recorded Audio Clips & Mocap Keyframes
+        const activeClip = st.audioClips?.find(
+          (c) => c.actorId === a.id && clock2d.t >= c.start && clock2d.t < c.start + c.duration,
+        );
+        if (activeClip) {
+          if (activeClip.mocapFrames && activeClip.mocapFrames.length > 0) {
+            const relT = clock2d.t - activeClip.start;
+            const frames = activeClip.mocapFrames;
+            let best = frames[0];
+            for (let i = 1; i < frames.length; i++) {
+              if (Math.abs(frames[i].t - relT) < Math.abs(best.t - relT)) {
+                best = frames[i];
+              }
+            }
+            if (best && best.face) {
+              frame.face = {
+                ...frame.face,
+                ...(best.face as any),
+              };
+              if (best.head) {
+                frame.angles.head = (frame.angles.head ?? 0) + best.head;
+              }
+            }
+          } else {
+            const flap = 0.35 + Math.sin(clock2d.t * 22) * 0.3;
+            frame.face.jaw = Math.max(frame.face.jaw ?? 0, flap);
+            frame.face.talk = true;
+          }
+        }
+
         applyFigure(d, frame, gyRef.current + (a.y ?? 0), a.scale, frame.rotation ?? (a.rotation ?? 0));
       }
       for (const o of st.objects) {
@@ -175,7 +232,10 @@ export function Stage2D() {
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      voiceEngine.stopAllPlayback();
+    };
   }, []);
 
   const toPt = (e: { clientX: number; clientY: number }) => {

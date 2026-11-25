@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { uid } from "../lib/util";
 import { appearanceFromIndex } from "./gen2d";
 import { dimsOf, groundOf } from "./anim2d";
-import type { Actor2D, Appearance, Aspect2D, Clip2D, Obj2D, Preview2D, Scene2D, SceneClip2D, Species } from "./types2d";
+import type { Actor2D, Appearance, Aspect2D, AudioClip2D, Clip2D, Obj2D, Preview2D, Scene2D, SceneClip2D, Species } from "./types2d";
 
 /* State for the 2D studio. Kept separate from the Film and Sandbox stores. */
 
@@ -86,7 +86,8 @@ function starter() {
   const sceneClips: SceneClip2D[] = [
     { id: uid(), start: 6, duration: 12, kind: 8, palette: 8 },
   ];
-  return { actors, clips, objects, scene: { kind: 0, palette: 0 } as Scene2D, sceneClips };
+  const audioClips: AudioClip2D[] = [];
+  return { actors, clips, objects, scene: { kind: 0, palette: 0 } as Scene2D, sceneClips, audioClips, liveMocapActorId: null as string | null };
 }
 
 interface State2D {
@@ -94,6 +95,8 @@ interface State2D {
   objects: Obj2D[];
   clips: Clip2D[];
   sceneClips: SceneClip2D[];
+  audioClips: AudioClip2D[];
+  liveMocapActorId: string | null;
   preview: Preview2D | null;
   scene: Scene2D;
   aspect: Aspect2D;
@@ -110,6 +113,10 @@ interface State2D {
   addActor: (appIndex: number, x?: number, species?: Species, customApp?: Appearance, customName?: string) => string;
   addSceneClip: (c: Partial<SceneClip2D> & { start: number }) => string;
   patchSceneClip: (id: string, p: Partial<SceneClip2D>) => void;
+  addAudioClip: (c: Partial<AudioClip2D> & { actorId: string; start: number; duration: number; audioUrl: string }) => string;
+  patchAudioClip: (id: string, p: Partial<AudioClip2D>) => void;
+  removeAudioClip: (id: string) => void;
+  setLiveMocapActorId: (id: string | null) => void;
   setPreview: (p: Preview2D | null) => void;
   addCrowd: () => void;
   patchActor: (id: string, p: Partial<Actor2D>) => void;
@@ -216,20 +223,30 @@ export const useStudio2d = create<State2D>()(
         return clip.id;
       },
       patchSceneClip: (id, p) => set((s) => ({ sceneClips: s.sceneClips.map((c) => (c.id === id ? { ...c, ...p } : c)) })),
+      addAudioClip: (c) => {
+        const clip: AudioClip2D = { id: uid(), volume: 1, ...c };
+        set((s) => ({ audioClips: [...s.audioClips, clip], selected: { kind: "clip", id: clip.id } }));
+        return clip.id;
+      },
+      patchAudioClip: (id, p) => set((s) => ({ audioClips: s.audioClips.map((c) => (c.id === id ? { ...c, ...p } : c)) })),
+      removeAudioClip: (id) => set((s) => ({ audioClips: s.audioClips.filter((c) => c.id !== id) })),
+      setLiveMocapActorId: (id) => set({ liveMocapActorId: id }),
       setPreview: (p) => set({ preview: p }),
       removeActorById: (id) =>
         set((s) => ({
           actors: s.actors.filter((a) => a.id !== id),
           clips: s.clips.filter((c) => c.actorId !== id),
+          audioClips: s.audioClips.filter((c) => c.actorId !== id),
           selected: s.selected?.kind === "actor" && s.selected.id === id ? null : s.selected,
         })),
       removeSelected: () =>
         set((s) => {
           const sel = s.selected;
           if (!sel) return s;
-          if (sel.kind === "actor") return { actors: s.actors.filter((a) => a.id !== sel.id), clips: s.clips.filter((c) => c.actorId !== sel.id), selected: null };
+          if (sel.kind === "actor") return { actors: s.actors.filter((a) => a.id !== sel.id), clips: s.clips.filter((c) => c.actorId !== sel.id), audioClips: s.audioClips.filter((c) => c.actorId !== sel.id), selected: null };
           if (sel.kind === "object") return { objects: s.objects.filter((o) => o.id !== sel.id), selected: null };
           if (s.sceneClips.some((c) => c.id === sel.id)) return { sceneClips: s.sceneClips.filter((c) => c.id !== sel.id), selected: null };
+          if (s.audioClips.some((c) => c.id === sel.id)) return { audioClips: s.audioClips.filter((c) => c.id !== sel.id), selected: null };
           return { clips: s.clips.filter((c) => c.id !== sel.id), selected: null };
         }),
       select: (sel) => set({ selected: sel }),
@@ -252,6 +269,7 @@ export const useStudio2d = create<State2D>()(
         objects: s.objects,
         clips: s.clips,
         sceneClips: s.sceneClips,
+        audioClips: s.audioClips,
         scene: s.scene,
         aspect: s.aspect,
         draft: s.draft,
