@@ -145,7 +145,7 @@ export function Stage2D() {
         if (!d) continue;
         const frame = evalActor(a, sortedClips(st.clips, a.id), clock2d.t);
         frame.species = a.species;
-        applyFigure(d, frame, gyRef.current + (a.y ?? 0), a.scale);
+        applyFigure(d, frame, gyRef.current + (a.y ?? 0), a.scale, frame.rotation ?? (a.rotation ?? 0));
       }
       for (const o of st.objects) {
         const el = objRefs.get(o.id);
@@ -154,6 +154,15 @@ export function Stage2D() {
         const f = evalObj(o, driveClips, clock2d.t);
         const flip = o.flip ? -1 : 1;
         el.setAttribute("transform", `translate(${f.x} ${o.y - f.bob}) rotate(${o.rotation}) scale(${o.scale * flip} ${o.scale})`);
+        const wheels = el.querySelectorAll(".car-wheel");
+        wheels.forEach((w) => w.setAttribute("transform", `rotate(${f.wheelAngle})`));
+
+        if (o.driverId) {
+          const driverFig = figRegistry.get(o.driverId);
+          if (driverFig?.outer) {
+            driverFig.outer.setAttribute("transform", `translate(${f.x + 38 * flip} ${o.y - f.bob - 22}) scale(${0.72 * flip} 0.72)`);
+          }
+        }
       }
       // scene change: last scene clip containing t, else the default scene
       const sc = sceneAt(st.sceneClips, st.scene, clock2d.t);

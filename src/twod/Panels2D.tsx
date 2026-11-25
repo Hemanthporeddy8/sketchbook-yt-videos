@@ -169,6 +169,50 @@ function CustomCharacterDesigner({ onDone }: { onDone: () => void }) {
                 />
               </Field>
 
+              <Field label="🎨 Custom Dress / Fabric Pattern">
+                <div className="flex flex-col gap-1.5">
+                  <div className="text-[10px] text-slate-400">
+                    Upload any drawing, pattern, or fabric photo to wrap onto the clothing:
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-[#e87d0d]/60 bg-[#e87d0d]/10 px-2 py-1.5 text-[11px] font-semibold text-[#ffb36b] hover:bg-[#e87d0d]/20">
+                      <ImagePlus className="h-3.5 w-3.5" />
+                      <span>{app.dressImage ? "Change Dress Drawing" : "Upload Dress Drawing / Pattern"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const res = ev.target?.result as string;
+                            if (res) set({ dressImage: res });
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    {app.dressImage && (
+                      <button
+                        onClick={() => set({ dressImage: undefined })}
+                        className="rounded border border-red-500/40 bg-red-500/20 px-2 py-1.5 text-[10px] font-bold text-red-300 hover:bg-red-500/30"
+                        title="Clear uploaded dress pattern"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {app.dressImage && (
+                    <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 p-1.5">
+                      <img src={app.dressImage} alt="Dress pattern preview" className="h-8 w-8 rounded object-cover border border-white/20" />
+                      <span className="text-[10px] text-emerald-400 font-medium">✓ Custom fabric active</span>
+                    </div>
+                  )}
+                </div>
+              </Field>
+
               <Field label="Primary Outfit / Dress Colour">
                 <div className="flex items-center gap-2">
                   <ColorInput value={app.outfitColor || app.dressColor || app.shirt} onChange={(v) => set({ outfitColor: v, dressColor: v, shirt: v })} />
@@ -826,7 +870,7 @@ function ActorEditor({ id }: { id: string }) {
       <input value={actor.name} onChange={(e) => patchActor(id, { name: e.target.value })} className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-slate-100 outline-none focus:border-[#e87d0d]/70" />
 
       <div className="flex justify-center p-1 bg-black/30 rounded-lg border border-white/5">
-        <CharacterPreviewSVG app={a} species={actor.species} className="h-32 w-28" />
+        <CharacterPreviewSVG app={a} species={actor.species} heldProp={actor.heldProp} className="h-32 w-28" />
       </div>
 
       {!animal ? (
@@ -839,6 +883,50 @@ function ActorEditor({ id }: { id: string }) {
               onChange={(v) => set({ outfit: v, dress: [1, 2, 3, 6].includes(v) })}
               options={OUTFIT_OPTIONS}
             />
+          </Field>
+
+          <Field label="🎨 Custom Dress / Fabric Pattern">
+            <div className="flex flex-col gap-1.5">
+              <div className="text-[10px] text-slate-400">
+                Upload any drawing, pattern, or fabric photo to wrap onto the clothing:
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-[#e87d0d]/60 bg-[#e87d0d]/10 px-2 py-1.5 text-[11px] font-semibold text-[#ffb36b] hover:bg-[#e87d0d]/20">
+                  <ImagePlus className="h-3.5 w-3.5" />
+                  <span>{a.dressImage ? "Change Dress Drawing" : "Upload Dress Drawing / Pattern"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const res = ev.target?.result as string;
+                        if (res) set({ dressImage: res });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {a.dressImage && (
+                  <button
+                    onClick={() => set({ dressImage: undefined })}
+                    className="rounded border border-red-500/40 bg-red-500/20 px-2 py-1.5 text-[10px] font-bold text-red-300 hover:bg-red-500/30"
+                    title="Clear uploaded dress pattern"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {a.dressImage && (
+                <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 p-1.5">
+                  <img src={a.dressImage} alt="Dress pattern preview" className="h-8 w-8 rounded object-cover border border-white/20" />
+                  <span className="text-[10px] text-emerald-400 font-medium">✓ Custom fabric active</span>
+                </div>
+              )}
+            </div>
           </Field>
 
           <Field label="Primary Outfit / Dress Colour">
@@ -982,6 +1070,81 @@ function ActorEditor({ id }: { id: string }) {
           <button onClick={() => patchActor(id, { facing: 1 })} className={cn("flex-1 rounded-md border py-1 text-[11px]", actor.facing === 1 ? "border-[#e87d0d] bg-[#e87d0d]/15 text-[#ffb36b] font-bold" : "border-white/10 text-slate-400 hover:text-slate-200")}>Right ▶</button>
         </div>
       </Field>
+      <Slider
+        label="Rotation / Tilt"
+        value={actor.rotation ?? 0}
+        min={-180}
+        max={180}
+        step={1}
+        onChange={(v) => patchActor(id, { rotation: v })}
+        format={(v) => `${Math.round(v)}°`}
+      />
+
+      {!animal && (
+        <div className="space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#ffb36b]">✋ Held Prop & Weapon</div>
+          <Field label="Hold Item / Prop">
+            <Select
+              value={actor.heldProp ?? -1}
+              onChange={(v) => patchActor(id, { heldProp: v === -1 ? undefined : v })}
+              options={[
+                { value: -1, label: "(None - Empty hands)" },
+                { value: 17, label: "📖 Book" },
+                { value: 18, label: "☕ Cup / Coffee" },
+                { value: 21, label: "📱 Smartphone" },
+                { value: 19, label: "⚽ Ball" },
+                { value: 29, label: "👑 Crown" },
+                { value: 25, label: "☂️ Umbrella" },
+                { value: 38, label: "🔑 Key" },
+                { value: 37, label: "🎁 Gift Box" },
+                { value: 3, label: "🌸 Flower" },
+                { value: 23, label: "🍎 Apple" },
+                { value: 24, label: "🎈 Balloon" },
+                { value: 9, label: "❤️ Heart" },
+                { value: 8, label: "⭐ Star" },
+                { value: 28, label: "🗡️ Sword / Signpost" },
+                { value: 22, label: "🎂 Cake" },
+                { value: 39, label: "🍕 Pizza" },
+                { value: 40, label: "🍔 Burger" },
+                { value: 41, label: "🍦 Ice Cream" },
+                { value: 55, label: "⚡ Lightning Staff" },
+                ...OBJECT_FAMILIES.map((name, i) => ({ value: i, label: `Object #${i}: ${name}` })).filter(
+                  (o) => ![17, 18, 21, 19, 29, 25, 38, 37, 3, 23, 24, 9, 8, 28, 22, 39, 40, 41, 55].includes(o.value)
+                ),
+              ]}
+            />
+          </Field>
+          {actor.heldProp !== undefined && actor.heldProp >= 0 && (
+            <Field label="Holding Hand">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => patchActor(id, { heldHand: "r" })}
+                  className={cn(
+                    "flex-1 rounded-md border py-1 text-[11px]",
+                    (actor.heldHand ?? "r") === "r"
+                      ? "border-[#e87d0d] bg-[#e87d0d]/15 text-[#ffb36b] font-bold"
+                      : "border-white/10 text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  Right Hand
+                </button>
+                <button
+                  onClick={() => patchActor(id, { heldHand: "l" })}
+                  className={cn(
+                    "flex-1 rounded-md border py-1 text-[11px]",
+                    actor.heldHand === "l"
+                      ? "border-[#e87d0d] bg-[#e87d0d]/15 text-[#ffb36b] font-bold"
+                      : "border-white/10 text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  Left Hand
+                </button>
+              </div>
+            </Field>
+          )}
+        </div>
+      )}
+
       <Slider label="Size" value={actor.scale} min={0.5} max={2.2} step={0.05} onChange={(v) => patchActor(id, { scale: v })} format={(v) => `${v.toFixed(2)}×`} />
       <Field label="Layer">
         <Select value={actor.depth} onChange={(v) => patchActor(id, { depth: v })} options={[{ value: 0, label: "Background (behind objects)" }, { value: 1, label: "Middle" }, { value: 2, label: "Foreground" }]} />
@@ -996,6 +1159,7 @@ function ActorEditor({ id }: { id: string }) {
 
 function ObjectEditor({ id }: { id: string }) {
   const obj = useStudio2d((s) => s.objects.find((o) => o.id === id));
+  const actors = useStudio2d((s) => s.actors);
   const patchObject = useStudio2d((s) => s.patchObject);
   const removeSelected = useStudio2d((s) => s.removeSelected);
   const addObject = useStudio2d((s) => s.addObject);
@@ -1013,6 +1177,18 @@ function ObjectEditor({ id }: { id: string }) {
       <Slider label="Scale" value={obj.scale} min={0.2} max={3} step={0.05} onChange={(v) => patchObject(id, { scale: v })} format={(v) => `${v.toFixed(2)}×`} />
       <Slider label="Rotation" value={obj.rotation} min={-180} max={180} step={1} onChange={(v) => patchObject(id, { rotation: v })} format={(v) => `${Math.round(v)}°`} />
       <Toggle label="Flip horizontally" checked={obj.flip} onChange={(v) => patchObject(id, { flip: v })} />
+      {(obj.family === 11 || obj.family === 12) && (
+        <Field label="🚗 Driver (seated inside)">
+          <Select
+            value={obj.driverId ?? ""}
+            onChange={(v) => patchObject(id, { driverId: v || undefined })}
+            options={[
+              { value: "", label: "(No driver - empty vehicle)" },
+              ...actors.map((a) => ({ value: a.id, label: `👤 ${a.name} (${a.species})` })),
+            ]}
+          />
+        </Field>
+      )}
       <div className="grid grid-cols-2 gap-1.5">
         <button onClick={() => addObject({ ...obj, id: undefined, name: obj.name, x: obj.x + 60, y: obj.y })} className="flex items-center justify-center gap-1 rounded-md bg-white/5 py-1.5 text-[11px] text-slate-200 hover:bg-white/10">
           <Copy className="h-3 w-3" /> Duplicate
@@ -1091,9 +1267,10 @@ function ClipEditor({ id }: { id: string }) {
               <Select value={clip.intensity} onChange={(v) => p({ intensity: v })} options={INTENSITY_OPTIONS.map((v) => ({ value: v, label: `${v}×` }))} />
             </Field>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Toggle label="Mirror" checked={clip.mirror} onChange={(v) => p({ mirror: v })} />
             <Toggle label="Talking (talking expressions)" checked={clip.talk} onChange={(v) => p({ talk: v })} />
+            <Toggle label="💥 Hit Spark (Impact Burst)" checked={!!clip.hitFx} onChange={(v) => p({ hitFx: v })} />
           </div>
         </>
       )}

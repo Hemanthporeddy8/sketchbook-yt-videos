@@ -34,6 +34,8 @@ export const STANCES: Stance[] = [
   { id: "arms-up", name: "Arms up", rot: { lUpperArm: [0, 0, 2.6], rUpperArm: [0, 0, -2.6] } },
   { id: "slouch", name: "Slouch", rot: { spine: [0.25, 0, 0], head: [0.4, 0, 0], lUpperArm: [0, 0, 0.25], rUpperArm: [0, 0, -0.25] } },
   { id: "sneak", name: "Sneak", rot: { spine: [0.25, 0, 0], head: [0.15, 0, 0], lUpperArm: [-0.4, 0, 0.1], rUpperArm: [-0.4, 0, -0.1], lLowerArm: [-0.6, 0, 0], rLowerArm: [-0.6, 0, 0] } },
+  { id: "fight-stance", name: "Fight stance", rot: { spine: [0.15, 0, 0], lUpperArm: [-1.2, -0.4, 0.4], lLowerArm: [-2.1, 0, 0], rUpperArm: [-1.4, 0.4, -0.4], rLowerArm: [-2.2, 0, 0], lUpperLeg: [-0.4, 0, 0], lLowerLeg: [0.7, 0, 0], rUpperLeg: [-0.2, 0, 0], rLowerLeg: [0.4, 0, 0] } },
+  { id: "knocked-out", name: "Knocked out", py: -0.9, rot: { spine: [1.57, 0, 0], head: [0.2, 0, 0], lUpperArm: [0, 0, 1.2], rUpperArm: [0, 0, -1.2], lUpperLeg: [0, 0, 0.2], rUpperLeg: [0, 0, -0.2] } },
   { id: "t-pose", name: "T-pose", rot: { lUpperArm: [0, 0, 1.57], rUpperArm: [0, 0, -1.57] } },
 ];
 
@@ -88,6 +90,13 @@ export const GESTURES: Gesture[] = [
   g("tip-hat", "Tip hat", [o("rUpperArm", Z, -2), o("rLowerArm", X, -1.8), o("head", Y, 0.1)]),
   g("camera-snap", "Take a photo", [o("rUpperArm", X, -1.5), o("rLowerArm", X, -1.8), o("head", Y, 0.1)]),
   g("heartbeat", "Hand on chest", [o("lUpperArm", X, -0.8), o("rUpperArm", X, -0.8), o("spine", X, 0.05, 0.05, 1.2)]),
+  g("punch", "👊 Punch", [o("rUpperArm", X, -1.6, 0.7, 3), o("rLowerArm", X, -0.2, 0.7, 3), o("spine", X, 0.2, 0.15, 3)]),
+  g("punch-left", "👊 Punch left", [o("lUpperArm", X, -1.6, 0.7, 3), o("lLowerArm", X, -0.2, 0.7, 3), o("spine", X, 0.2, 0.15, 3)]),
+  g("uppercut", "💥 Uppercut", [o("rUpperArm", X, -2.1, 0.8, 2.5), o("rLowerArm", X, -1.6, 0.8, 2.5), o("head", X, -0.3, 0.2, 2.5)]),
+  g("kick", "🦵 Front kick", [o("rUpperLeg", X, -1.8, 0.7, 2), o("rLowerLeg", X, 0.2, 0.4, 2), o("spine", X, -0.3, 0.2, 2)]),
+  g("fight-block", "🛡️ Block", [o("lUpperArm", X, -1.5), o("rUpperArm", X, -1.5), o("lLowerArm", X, -2.2), o("rLowerArm", X, -2.2), o("head", X, 0.2)]),
+  g("hit-react", "💥 Hit reaction", [o("head", X, -0.8, 0.5, 3), o("spine", X, -0.4, 0.3, 3), o("lUpperArm", Z, 1.2, 0.4, 3), o("rUpperArm", Z, -1.2, 0.4, 3)]),
+  g("dodge", "💨 Dodge", [o("spine", Z, 0, 0.5, 2), o("head", X, 0.3, 0.2, 2)]),
 ];
 
 export const STANCE_MAP: Record<string, Stance> = Object.fromEntries(STANCES.map((s) => [s.id, s]));

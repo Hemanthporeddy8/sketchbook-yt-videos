@@ -24,6 +24,7 @@ export interface Appearance {
   glassesColor?: string;
   neckwear?: number; // 0 none, 1 necktie, 2 bow-tie, 3 scarf, 4 necklace
   neckwearColor?: string;
+  dressImage?: string; // data URL of user uploaded dress artwork/fabric pattern
 }
 
 export interface Actor2D {
@@ -33,12 +34,15 @@ export interface Actor2D {
   species: Species;
   x: number;
   y?: number;
+  rotation?: number; // body tilt angle in degrees (e.g. 90 for knockout fall, lying down)
   facing: 1 | -1;
   scale: number;
   /** 0 = background (behind objects), 1 = middle, 2 = foreground */
   depth: number;
   /** when the character's clips are finished, remove it automatically */
   autoRemove?: boolean;
+  heldProp?: number; // family index of held object (-1 or undefined for none)
+  heldHand?: "r" | "l";
 }
 
 export interface Obj2D {
@@ -53,6 +57,7 @@ export interface Obj2D {
   scale: number;
   rotation: number;
   flip: boolean;
+  driverId?: string; // actorId of driver sitting in car
 }
 
 export interface Clip2D {
@@ -72,6 +77,8 @@ export interface Clip2D {
   toX: number; // walk target x (walk clips only)
   say: string; // speech bubble text
   facing?: 1 | -1; // custom facing direction for this clip (1: right, -1: left)
+  heldProp?: number; // prop override for this clip
+  hitFx?: boolean; // trigger cartoon comic impact burst
 }
 
 export interface SceneClip2D {

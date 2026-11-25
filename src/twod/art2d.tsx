@@ -14,7 +14,7 @@ const starPts = (cx: number, cy: number, R: number, r: number) =>
     return `${(cx + Math.cos(ang) * rad).toFixed(1)},${(cy + Math.sin(ang) * rad).toFixed(1)}`;
   }).join(" ");
 
-function art(f: number, a: string, b: string, c: string): ReactNode {
+function art(f: number, a: string, b: string, c: string, wheelAngle = 0): ReactNode {
   switch (f) {
     case 0: // Tree
       return (
@@ -94,27 +94,69 @@ function art(f: number, a: string, b: string, c: string): ReactNode {
           <rect x={-78} y={-60} width={28} height={28} fill="#dbeafe" />
         </>
       );
-    case 11: // Car
+    case 11: // Car with rotating spoke wheels, driver cabin, and headlights
       return (
-        <>
-          <rect x={-92} y={-66} width={184} height={48} rx={16} fill={a} />
-          <path d="M -52 -66 L -28 -112 L 42 -112 L 62 -66 Z" fill={b} />
-          <circle cx={-52} cy={-14} r={18} fill="#111827" />
-          <circle cx={52} cy={-14} r={18} fill="#111827" />
-          <circle cx={-52} cy={-14} r={7} fill="#9ca3af" />
-          <circle cx={52} cy={-14} r={7} fill="#9ca3af" />
-        </>
+        <g>
+          {wheelAngle !== 0 && (
+            <g opacity={0.65}>
+              <circle cx={-108} cy={-24} r={6 + (Math.sin(wheelAngle * 0.1) * 2)} fill="#94a3b8" />
+              <circle cx={-124} cy={-28} r={9 + (Math.cos(wheelAngle * 0.1) * 3)} fill="#cbd5e1" />
+              <circle cx={-144} cy={-34} r={13} fill="#e2e8f0" opacity={0.4} />
+            </g>
+          )}
+          <rect x={-96} y={-66} width={192} height={50} rx={16} fill={a} />
+          <path d="M -54 -66 L -28 -112 L 42 -112 L 64 -66 Z" fill={b} />
+          <path d="M -44 -68 L -24 -106 L 36 -106 L 52 -68 Z" fill="rgba(219, 234, 254, 0.75)" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <line x1={32} y1={-72} x2={42} y2={-90} stroke="#1f2937" strokeWidth={5} strokeLinecap="round" />
+          <ellipse cx={40} cy={-90} rx={8} ry={12} fill="none" stroke="#1f2937" strokeWidth={3} />
+          <polygon points="96,-48 160,-70 160,-20 96,-34" fill="rgba(254, 240, 138, 0.25)" />
+          <circle cx={92} cy={-42} r={6} fill="#fef08a" />
+          <g transform="translate(-52 -14)">
+            <g className="car-wheel" transform={`rotate(${wheelAngle})`}>
+              <circle cx={0} cy={0} r={19} fill="#0f172a" stroke="#334155" strokeWidth={3} />
+              <circle cx={0} cy={0} r={10} fill="#94a3b8" />
+              <line x1={-9} y1={0} x2={9} y2={0} stroke="#475569" strokeWidth={2.5} />
+              <line x1={0} y1={-9} x2={0} y2={9} stroke="#475569" strokeWidth={2.5} />
+              <circle cx={0} cy={0} r={4} fill="#f8fafc" />
+            </g>
+          </g>
+          <g transform="translate(52 -14)">
+            <g className="car-wheel" transform={`rotate(${wheelAngle})`}>
+              <circle cx={0} cy={0} r={19} fill="#0f172a" stroke="#334155" strokeWidth={3} />
+              <circle cx={0} cy={0} r={10} fill="#94a3b8" />
+              <line x1={-9} y1={0} x2={9} y2={0} stroke="#475569" strokeWidth={2.5} />
+              <line x1={0} y1={-9} x2={0} y2={9} stroke="#475569" strokeWidth={2.5} />
+              <circle cx={0} cy={0} r={4} fill="#f8fafc" />
+            </g>
+          </g>
+        </g>
       );
-    case 12: // Bus
+    case 12: // Bus with rotating wheels
       return (
-        <>
+        <g>
           <rect x={-102} y={-150} width={204} height={140} rx={18} fill={a} />
-          <rect x={-84} y={-132} width={42} height={42} fill={b} />
-          <rect x={-28} y={-132} width={42} height={42} fill={b} />
-          <rect x={28} y={-132} width={42} height={42} fill={b} />
-          <circle cx={-64} cy={-8} r={18} fill="#111827" />
-          <circle cx={64} cy={-8} r={18} fill="#111827" />
-        </>
+          <rect x={-84} y={-132} width={42} height={42} rx={6} fill="rgba(219, 234, 254, 0.75)" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <rect x={-28} y={-132} width={42} height={42} rx={6} fill="rgba(219, 234, 254, 0.75)" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <rect x={28} y={-132} width={42} height={42} rx={6} fill="rgba(219, 234, 254, 0.75)" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <g transform="translate(-64 -8)">
+            <g className="car-wheel" transform={`rotate(${wheelAngle})`}>
+              <circle cx={0} cy={0} r={19} fill="#0f172a" stroke="#334155" strokeWidth={3} />
+              <circle cx={0} cy={0} r={10} fill="#94a3b8" />
+              <line x1={-9} y1={0} x2={9} y2={0} stroke="#475569" strokeWidth={2.5} />
+              <line x1={0} y1={-9} x2={0} y2={9} stroke="#475569" strokeWidth={2.5} />
+              <circle cx={0} cy={0} r={4} fill="#f8fafc" />
+            </g>
+          </g>
+          <g transform="translate(64 -8)">
+            <g className="car-wheel" transform={`rotate(${wheelAngle})`}>
+              <circle cx={0} cy={0} r={19} fill="#0f172a" stroke="#334155" strokeWidth={3} />
+              <circle cx={0} cy={0} r={10} fill="#94a3b8" />
+              <line x1={-9} y1={0} x2={9} y2={0} stroke="#475569" strokeWidth={2.5} />
+              <line x1={0} y1={-9} x2={0} y2={9} stroke="#475569" strokeWidth={2.5} />
+              <circle cx={0} cy={0} r={4} fill="#f8fafc" />
+            </g>
+          </g>
+        </g>
       );
     case 13: // Bench
       return (
@@ -561,9 +603,9 @@ function art(f: number, a: string, b: string, c: string): ReactNode {
   }
 }
 
-export function ObjectArt({ family, pal, variant }: { family: number; pal: P; variant: number }) {
+export function ObjectArt({ family, pal, variant, wheelAngle = 0 }: { family: number; pal: P; variant: number; wheelAngle?: number }) {
   const s = VARIANT_SCALE[variant] ?? 1;
-  return <g transform={`scale(${s})`}>{art(family, pal[0], pal[1], pal[2])}</g>;
+  return <g transform={`scale(${s})`}>{art(family, pal[0], pal[1], pal[2], wheelAngle)}</g>;
 }
 
 /** Background: sky gradient, decor for the scene kind, then ground. */

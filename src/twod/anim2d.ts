@@ -58,6 +58,8 @@ export interface ActorFrame extends Pose2D {
   species: string;
   t: number;
   hidden?: boolean;
+  rotation?: number;
+  hitFx?: boolean;
 }
 
 const IDLE: Clip2D = {
@@ -187,7 +189,27 @@ export function evalActor(a: Actor2D, clips: Clip2D[], t: number): ActorFrame {
     }
   }
 
-  return { x, facing, angles: pose.angles, py: pose.py, face: pose.face, bubble: hidden ? "" : (active?.say ?? ""), gait, speedMs, grounded: true, species: "", t, hidden };
+  const isKnockedOut = active?.stance === "knocked-out";
+  const rotation = (a.rotation ?? 0) + (isKnockedOut ? -88 * facing : 0);
+  const py = isKnockedOut ? -65 : pose.py;
+  const hitFx = !!active?.hitFx || (!!active?.gesture && ["punch", "punch-left", "uppercut", "kick"].includes(active.gesture));
+
+  return {
+    x,
+    facing,
+    angles: pose.angles,
+    py,
+    rotation,
+    face: isKnockedOut ? { ...pose.face, blinkL: 1, blinkR: 1 } : pose.face,
+    bubble: hidden ? "" : (active?.say ?? ""),
+    gait,
+    speedMs,
+    grounded: true,
+    species: "",
+    t,
+    hidden,
+    hitFx,
+  };
 }
 
 /** The background to draw right now: the scene clip whose window includes t, else the default scene. */
@@ -203,17 +225,19 @@ export function sceneAt(
   return best ? { kind: best.kind, palette: best.palette } : fallback;
 }
 
-/** Position and bob for a movable object at time t (walk logic, minus the legs). */
-export function evalObj(o: Obj2D, clips: Clip2D[], t: number): { x: number; bob: number; moving: boolean } {
+/** Position, bob, and wheel rotation for a movable object at time t. */
+export function evalObj(o: Obj2D, clips: Clip2D[], t: number): { x: number; bob: number; moving: boolean; wheelAngle: number } {
   let x = o.x;
   let bob = 0;
   let moving = false;
+  let wheelAngle = 0;
   for (const c of clips) {
     if (c.kind !== "drive") continue;
     const from = x;
     const to = c.toX;
     if (t >= c.start + c.duration) {
       x = to;
+      wheelAngle = Math.round(((to - from) / 1.5) * 360) % 360;
       continue;
     }
     if (t >= c.start) {
@@ -224,10 +248,11 @@ export function evalObj(o: Obj2D, clips: Clip2D[], t: number): { x: number; bob:
       const de = (Math.abs(dist) * (6 * p * (1 - p))) / c.duration;
       moving = true;
       bob = Math.abs(Math.sin(t * 7)) * Math.min(12, de * 0.5);
+      wheelAngle = Math.round(((x - from) / 1.5) * 360) % 360;
     }
     break;
   }
-  return { x, bob, moving };
+  return { x, bob, moving, wheelAngle };
 }
 
 /** Length of the whole project in seconds (at least 6 s, plus a little tail). */

@@ -1,7 +1,8 @@
 import { useEffect, useRef, type PointerEvent as RPointerEvent } from "react";
 import type { Actor2D, Appearance, Species } from "./types2d";
 import { BONE_AT, HEAD_TOP, deg, type ActorFrame } from "./anim2d";
-import { isAnimal } from "./gen2d";
+import { isAnimal, OBJECT_PALETTES } from "./gen2d";
+import { ObjectArt } from "./art2d";
 
 /*
  * 2D characters: side-view figures built from SVG parts. Each bone is a <g> whose transform is set every frame.
@@ -20,6 +21,7 @@ export interface FigDom {
   browL: SVGGElement | null;
   browR: SVGGElement | null;
   mouth: SVGPathElement | null;
+  hitSpark: SVGGElement | null;
   bubble: SVGGElement | null;
   bubbleRect: SVGRectElement | null;
   bubbleText: SVGTextElement | null;
@@ -27,7 +29,7 @@ export interface FigDom {
 
 const emptyDom = (s: Species): FigDom => ({
   species: s, outer: null, bones: {}, eyeL: null, eyeR: null, pupilL: null, pupilR: null,
-  browL: null, browR: null, mouth: null, bubble: null, bubbleRect: null, bubbleText: null,
+  browL: null, browR: null, mouth: null, hitSpark: null, bubble: null, bubbleRect: null, bubbleText: null,
 });
 
 /** Live DOM handles for every character on the stage, keyed by actor id. */
@@ -432,15 +434,21 @@ function limbLeg(p: "l" | "r", a: Appearance, rf: RefFn) {
   );
 }
 
-function limbArm(p: "l" | "r", a: Appearance, rf: RefFn) {
+function limbArm(p: "l" | "r", a: Appearance, rf: RefFn, heldProp?: number, heldHand?: "r" | "l") {
   const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
   const sleeveColor = a.outfit === 2 ? a.skin : (isDress ? (a.outfitColor || a.dressColor || a.shirt) : a.shirt);
+  const isHolding = heldProp !== undefined && heldProp !== null && heldProp >= 0 && ((heldHand ?? "r") === p);
   return (
     <g ref={rf(`${p}UpperArm`)}>
       <line x1={0} y1={0} x2={0} y2={62} stroke={sleeveColor} strokeWidth={22} strokeLinecap="round" />
       <g ref={rf(`${p}LowerArm`)}>
         <line x1={0} y1={0} x2={0} y2={58} stroke={a.skin} strokeWidth={18} strokeLinecap="round" />
         <circle cx={0} cy={60} r={13} fill={a.skin} />
+        {isHolding && (
+          <g transform="translate(0 60) scale(0.46)" style={{ pointerEvents: "none" }}>
+            <ObjectArt family={heldProp} pal={OBJECT_PALETTES[heldProp % OBJECT_PALETTES.length]} variant={1} />
+          </g>
+        )}
       </g>
     </g>
   );
@@ -449,11 +457,18 @@ function limbArm(p: "l" | "r", a: Appearance, rf: RefFn) {
 function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }) {
   const a = actor.app;
   const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
-  const dressCol = a.outfitColor || a.dressColor || a.shirt;
+  const dressCol = a.dressImage ? `url(#pat-${actor.id})` : (a.outfitColor || a.dressColor || a.shirt);
   const accentCol = a.accentColor || "#facc15";
-  const torsoCol = isDress ? dressCol : a.shirt;
+  const torsoCol = a.dressImage ? `url(#pat-${actor.id})` : (isDress ? dressCol : a.shirt);
   return (
     <>
+      {a.dressImage && (
+        <defs>
+          <pattern id={`pat-${actor.id}`} patternUnits="userSpaceOnUse" width={160} height={240} x={-80} y={-128}>
+            <image href={a.dressImage} x={-80} y={-128} width={160} height={240} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        </defs>
+      )}
       <g ref={rf("hips")}>
         {outfitHipsArt(a, dressCol, accentCol)}
         {limbLeg("l", a, rf)}
@@ -461,8 +476,8 @@ function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom })
         <g ref={rf("spine")}>
           <rect x={-48 * a.build} y={-128} width={96 * a.build} height={136} rx={34} fill={torsoCol} />
           {outfitTorsoArt(a, torsoCol, accentCol)}
-          {limbArm("l", a, rf)}
-          {limbArm("r", a, rf)}
+          {limbArm("l", a, rf, actor.heldProp, actor.heldHand)}
+          {limbArm("r", a, rf, actor.heldProp, actor.heldHand)}
           <g ref={rf("head")}>
             {hairBack(a)}
             <circle cx={-50} cy={-54} r={11} fill={a.skin} />
@@ -491,6 +506,19 @@ function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom })
             {neckwearArt(a)}
           </g>
         </g>
+      </g>
+      {/* Comic hit impact burst / sparks */}
+      <g ref={(el) => { d.hitSpark = el; }} className="hit-spark" display="none" transform="translate(0 -60)" style={{ pointerEvents: "none" }}>
+        <polygon
+          points="0,-54 14,-18 52,-36 26,0 54,26 18,16 28,54 0,24 -26,50 -16,16 -52,28 -24,0 -52,-32 -16,-16"
+          fill="#facc15"
+          stroke="#ef4444"
+          strokeWidth={4}
+        />
+        <polygon
+          points="0,-32 9,-11 32,-21 16,0 32,15 11,10 17,32 0,15 -17,30 -10,10 -32,16 -15,0 -32,-19 -10,-10"
+          fill="#ffffff"
+        />
       </g>
     </>
   );
@@ -944,15 +972,26 @@ function applyFace(d: FigDom, s: NonNullable<ActorFrame["face"]>) {
   }
 }
 
-export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: number) {
+export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: number, rotation = 0) {
   if (f.hidden) {
     if (d.outer) d.outer.setAttribute("display", "none");
     if (d.bubble) d.bubble.setAttribute("display", "none");
+    if (d.hitSpark) d.hitSpark.setAttribute("display", "none");
     return;
   }
   if (d.outer) {
     d.outer.removeAttribute("display");
-    d.outer.setAttribute("transform", `translate(${f.x} ${groundY}) scale(${scale * f.facing} ${scale})`);
+    const rot = rotation || (f.rotation ?? 0);
+    const rotStr = rot ? ` rotate(${rot})` : "";
+    d.outer.setAttribute("transform", `translate(${f.x} ${groundY}) scale(${scale * f.facing} ${scale})${rotStr}`);
+  }
+
+  if (d.hitSpark) {
+    if (f.hitFx) {
+      d.hitSpark.removeAttribute("display");
+    } else {
+      d.hitSpark.setAttribute("display", "none");
+    }
   }
 
   if (isAnimal(d.species)) {
@@ -1072,7 +1111,17 @@ export function Figure2D({
 
 export { isChild };
 
-export function CharacterPreviewSVG({ app: a, species = "human", className = "h-28 w-24" }: { app: Appearance; species?: Species; className?: string }) {
+export function CharacterPreviewSVG({
+  app: a,
+  species = "human",
+  heldProp,
+  className = "h-28 w-24",
+}: {
+  app: Appearance;
+  species?: Species;
+  heldProp?: number;
+  className?: string;
+}) {
   if (species !== "human" && species !== "girl") {
     return (
       <div className={`flex flex-col items-center justify-center rounded-lg bg-black/40 p-2 ${className}`}>
@@ -1082,13 +1131,21 @@ export function CharacterPreviewSVG({ app: a, species = "human", className = "h-
     );
   }
 
+  const prevPatId = useRef(`prev-pat-${Math.random().toString(36).slice(2, 7)}`).current;
   const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
-  const dressCol = a.outfitColor || a.dressColor || a.shirt;
+  const dressCol = a.dressImage ? `url(#${prevPatId})` : (a.outfitColor || a.dressColor || a.shirt);
   const accentCol = a.accentColor || "#facc15";
-  const torsoCol = isDress ? dressCol : a.shirt;
+  const torsoCol = a.dressImage ? `url(#${prevPatId})` : (isDress ? dressCol : a.shirt);
 
   return (
     <svg viewBox="-80 -185 160 270" className={`overflow-visible rounded-lg bg-black/40 ${className}`}>
+      {a.dressImage && (
+        <defs>
+          <pattern id={prevPatId} patternUnits="userSpaceOnUse" width={160} height={240} x={-80} y={-128}>
+            <image href={a.dressImage} x={-80} y={-128} width={160} height={240} preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        </defs>
+      )}
       {/* Shadow */}
       <ellipse cx={0} cy={76} rx={44} ry={8} fill="rgba(0,0,0,0.3)" />
 
@@ -1121,6 +1178,11 @@ export function CharacterPreviewSVG({ app: a, species = "human", className = "h-
         <line x1={44 * a.build} y1={-108} x2={46 * a.build} y2={-52} stroke={a.outfit === 2 ? a.skin : (isDress ? dressCol : a.shirt)} strokeWidth={18} strokeLinecap="round" />
         <line x1={46 * a.build} y1={-52} x2={46 * a.build} y2={-8} stroke={a.skin} strokeWidth={15} strokeLinecap="round" />
         <circle cx={46 * a.build} cy={-6} r={11} fill={a.skin} />
+        {heldProp !== undefined && heldProp !== null && heldProp >= 0 && (
+          <g transform={`translate(${46 * a.build} -6) scale(0.36)`} style={{ pointerEvents: "none" }}>
+            <ObjectArt family={heldProp} pal={OBJECT_PALETTES[heldProp % OBJECT_PALETTES.length]} variant={1} />
+          </g>
+        )}
       </g>
 
       {/* Head & Face */}
