@@ -107,7 +107,7 @@ interface State2D {
   rec: "idle" | "recording" | "done";
   recLabel: string;
 
-  addActor: (appIndex: number, x?: number, species?: Species) => string;
+  addActor: (appIndex: number, x?: number, species?: Species, customApp?: Appearance, customName?: string) => string;
   addSceneClip: (c: Partial<SceneClip2D> & { start: number }) => string;
   patchSceneClip: (id: string, p: Partial<SceneClip2D>) => void;
   setPreview: (p: Preview2D | null) => void;
@@ -149,13 +149,13 @@ export const useStudio2d = create<State2D>()(
       rec: "idle",
       recLabel: "",
 
-      addActor: (appIndex, x = 640, species: Species = "human") => {
+      addActor: (appIndex, x = 640, species: Species = "human", customApp?: Appearance, customName?: string) => {
         const id = uid();
         const n = get().actors.length;
         const a: Actor2D = {
           id,
-          name: NAMES_2D[(appIndex + n) % NAMES_2D.length],
-          app: appearanceFromIndex(appIndex),
+          name: customName?.trim() || NAMES_2D[(appIndex + n) % NAMES_2D.length],
+          app: customApp ?? appearanceFromIndex(appIndex, species),
           species,
           x,
           facing: 1,

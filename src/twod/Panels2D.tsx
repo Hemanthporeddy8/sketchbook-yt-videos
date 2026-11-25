@@ -1,22 +1,23 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Copy, ImagePlus, Search, Trash2, Users } from "lucide-react";
+import { Copy, ImagePlus, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
 import { useStudio2d, type Tab2D, DEFAULT_DRAFT } from "./store2d";
-import type { Species } from "./types2d";
+import type { Appearance, Species } from "./types2d";
 import {
   EXPRESSION_OPTIONS, ANIMAL_EXPRESSION_OPTIONS, GESTURE_OPTIONS, OBJECT_FAMILIES, OBJECT_PALETTES, OBJECT_VARIANTS,
   SCENE_KINDS, SCENE_PALETTES, DEFAULT_SCENE_PALETTE, SKIN_TONES, HAIR_COLORS, HAIR_STYLES, CLOTH, SHOE_COLORS, EYE_COLORS, BUILDS, HATS,
   STANCE_OPTIONS, SPEED_OPTIONS, INTENSITY_OPTIONS, PHASE_OPTIONS, appearanceFromIndex, appearanceCombos, motionCombos, objectCombos,
-  sceneCombos, SPECIES_LIST, ANIMAL_STANCE_OPTIONS,
+  sceneCombos, SPECIES_LIST, ANIMAL_STANCE_OPTIONS, OUTFIT_OPTIONS, BOTTOM_OPTIONS, GLASSES_OPTIONS, NECKWEAR_OPTIONS,
 } from "./gen2d";
 import { OBJECT_GROUND } from "./helptab";
 import { ObjectArt } from "./art2d";
 import { clock2d, dimsOf, groundOf } from "./anim2d";
 import { SANDBOX_ACTIONS } from "../sandbox/actions";
 import { isAnimal as isAnimalName } from "./gen2d";
-import { Field, NumberInput, Section, Select, Slider, Toggle, Swatches } from "../ui/ui-kit";
+import { Field, NumberInput, Section, Select, Slider, Toggle, Swatches, ColorInput } from "../ui/ui-kit";
 import { cn } from "../utils/cn";
 import MiniFigure from "./MiniFigure";
+import { CharacterPreviewSVG } from "./rig2d";
 
 /* ---------------------------------------------------------------- */
 /* Left panel                                                       */
@@ -59,16 +60,299 @@ export function Studio2DLeft() {
 
 /* Characters ------------------------------------------------------ */
 
+function CustomCharacterDesigner({ onDone }: { onDone: () => void }) {
+  const addActor = useStudio2d((s) => s.addActor);
+  const [name, setName] = useState("Hero");
+  const [species, setSpecies] = useState<Species>("girl");
+  const [subTab, setSubTab] = useState<"outfit" | "hair" | "face" | "acc">("outfit");
+  const [app, setApp] = useState<Appearance>(() => appearanceFromIndex(Date.now(), "girl"));
+
+  const set = (p: Partial<Appearance>) => setApp((prev) => ({ ...prev, ...p }));
+
+  const handleRandomize = () => {
+    const seed = Math.floor(Math.random() * 1000000);
+    setApp(appearanceFromIndex(seed, species));
+  };
+
+  const handleAdd = () => {
+    addActor(0, 640, species, app, name);
+    onDone();
+  };
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 space-y-3">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-[#ffb36b]">
+          <Palette className="h-4 w-4" />
+          <span>Character & Dress Designer</span>
+        </div>
+        <button onClick={onDone} className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white" title="Close designer">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-lg border border-[#e87d0d]/40 bg-black/40 p-2.5">
+        <CharacterPreviewSVG app={app} species={species} className="h-28 w-20 shrink-0" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div>
+            <div className="text-[10px] text-slate-400 font-medium">Character Name</div>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded border border-white/10 bg-black/50 px-2 py-1 text-xs text-white outline-none focus:border-[#e87d0d]"
+              placeholder="e.g. Princess Maya, Leo"
+            />
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={handleRandomize}
+              className="flex items-center gap-1 rounded bg-white/10 px-2 py-1 text-[10px] font-semibold text-slate-200 hover:bg-white/20"
+              title="Randomize appearance"
+            >
+              <Wand2 className="h-3 w-3" /> Random
+            </button>
+            <button
+              onClick={handleAdd}
+              className="flex flex-1 items-center justify-center gap-1 rounded bg-[#e87d0d] px-2 py-1 text-[11px] font-bold text-black hover:bg-[#ff9430]"
+            >
+              <Sparkles className="h-3 w-3" /> + Add to Stage
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Field label="Species">
+        <div className="flex flex-wrap gap-1">
+          {SPECIES_LIST.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setSpecies(s.id);
+                setApp(appearanceFromIndex(Date.now(), s.id));
+              }}
+              className={cn(
+                "flex items-center gap-1 rounded border px-2 py-1 text-[10px]",
+                species === s.id ? "border-[#e87d0d] bg-[#e87d0d]/20 text-white font-bold" : "border-white/10 text-slate-400 hover:border-white/30"
+              )}
+            >
+              <span>{s.emoji}</span>
+              <span>{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {species === "human" || species === "girl" ? (
+        <>
+          <div className="grid grid-cols-4 gap-1 border-b border-white/10 pb-1">
+            {(["outfit", "hair", "face", "acc"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setSubTab(t)}
+                className={cn(
+                  "rounded py-1 text-[10px] font-semibold",
+                  subTab === t ? "bg-[#e87d0d]/25 text-[#ffb36b]" : "text-slate-400 hover:bg-white/5"
+                )}
+              >
+                {t === "outfit" ? "👗 Dress" : t === "hair" ? "💇 Hair" : t === "face" ? "👤 Body" : "🕶️ Accs"}
+              </button>
+            ))}
+          </div>
+
+          {subTab === "outfit" && (
+            <div className="space-y-2.5">
+              <Field label="Dress & Outfit Style">
+                <Select
+                  value={app.outfit ?? (app.dress ? 1 : 0)}
+                  onChange={(v) => set({ outfit: v, dress: [1, 2, 3, 6].includes(v) })}
+                  options={OUTFIT_OPTIONS}
+                />
+              </Field>
+
+              <Field label="Primary Outfit / Dress Colour">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.outfitColor || app.dressColor || app.shirt} onChange={(v) => set({ outfitColor: v, dressColor: v, shirt: v })} />
+                </div>
+                <Swatches colors={CLOTH} value={app.outfitColor || app.dressColor || app.shirt} onPick={(v) => set({ outfitColor: v, dressColor: v, shirt: v })} />
+              </Field>
+
+              <Field label="Accent Colour (Trims, Lapels, Sash, Tie)">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.accentColor || "#facc15"} onChange={(v) => set({ accentColor: v })} />
+                </div>
+                <Swatches colors={CLOTH} value={app.accentColor || "#facc15"} onPick={(v) => set({ accentColor: v })} />
+              </Field>
+
+              <Field label="Bottom Cut (for Separates)">
+                <Select
+                  value={app.bottomCut ?? 0}
+                  onChange={(v) => set({ bottomCut: v })}
+                  options={BOTTOM_OPTIONS}
+                />
+              </Field>
+
+              <Field label="Trousers / Pants Colour">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.pants} onChange={(v) => set({ pants: v })} />
+                </div>
+                <Swatches colors={CLOTH} value={app.pants} onPick={(v) => set({ pants: v })} />
+              </Field>
+
+              <Field label="Shoes Colour">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.shoes} onChange={(v) => set({ shoes: v })} />
+                </div>
+                <Swatches colors={SHOE_COLORS} value={app.shoes} onPick={(v) => set({ shoes: v })} />
+              </Field>
+            </div>
+          )}
+
+          {subTab === "hair" && (
+            <div className="space-y-2.5">
+              <Field label="Hairstyle">
+                <Select
+                  value={app.hairStyle}
+                  onChange={(v) => set({ hairStyle: v })}
+                  options={HAIR_STYLES.map((n, i) => ({ value: i, label: n }))}
+                />
+              </Field>
+              <Field label="Hair Colour">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.hair} onChange={(v) => set({ hair: v })} />
+                </div>
+                <Swatches colors={HAIR_COLORS} value={app.hair} onPick={(v) => set({ hair: v })} />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Beard">
+                  <Select value={app.beard ? 1 : 0} onChange={(v) => set({ beard: v === 1 })} options={[{ value: 0, label: "None" }, { value: 1, label: "Full beard" }]} />
+                </Field>
+                {app.beard && (
+                  <Field label="Beard Colour">
+                    <ColorInput value={app.beardColor} onChange={(v) => set({ beardColor: v })} />
+                  </Field>
+                )}
+              </div>
+            </div>
+          )}
+
+          {subTab === "face" && (
+            <div className="space-y-2.5">
+              <Field label="Skin Tone">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.skin} onChange={(v) => set({ skin: v })} />
+                </div>
+                <Swatches colors={SKIN_TONES} value={app.skin} onPick={(v) => set({ skin: v })} />
+              </Field>
+              <Field label="Eye Colour">
+                <div className="flex items-center gap-2">
+                  <ColorInput value={app.eyes} onChange={(v) => set({ eyes: v })} />
+                </div>
+                <Swatches colors={EYE_COLORS} value={app.eyes} onPick={(v) => set({ eyes: v })} />
+              </Field>
+              <Field label="Body Build">
+                <Select value={app.build} onChange={(v) => set({ build: v })} options={BUILDS.map((b) => ({ value: b.v, label: b.label }))} />
+              </Field>
+            </div>
+          )}
+
+          {subTab === "acc" && (
+            <div className="space-y-2.5">
+              <Field label="Glasses & Eyewear">
+                <Select
+                  value={app.glasses ?? 0}
+                  onChange={(v) => set({ glasses: v })}
+                  options={GLASSES_OPTIONS}
+                />
+              </Field>
+              {!!app.glasses && (
+                <Field label="Glasses Frame Colour">
+                  <ColorInput value={app.glassesColor || "#1f2937"} onChange={(v) => set({ glassesColor: v })} />
+                </Field>
+              )}
+
+              <Field label="Neckwear & Accessories">
+                <Select
+                  value={app.neckwear ?? 0}
+                  onChange={(v) => set({ neckwear: v })}
+                  options={NECKWEAR_OPTIONS}
+                />
+              </Field>
+              {!!app.neckwear && (
+                <Field label="Neckwear Colour">
+                  <ColorInput value={app.neckwearColor || app.accentColor || "#dc2626"} onChange={(v) => set({ neckwearColor: v })} />
+                </Field>
+              )}
+
+              <Field label="Hat & Headwear">
+                <Select value={app.hat} onChange={(v) => set({ hat: v })} options={HATS.map((n, i) => ({ value: i, label: n }))} />
+              </Field>
+              {app.hat > 0 && (
+                <Field label="Hat Colour">
+                  <div className="flex items-center gap-2">
+                    <ColorInput value={app.hatColor} onChange={(v) => set({ hatColor: v })} />
+                  </div>
+                  <Swatches colors={CLOTH} value={app.hatColor} onPick={(v) => set({ hatColor: v })} />
+                </Field>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="space-y-2.5">
+          <Field label="Body Colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={app.skin} onChange={(v) => set({ skin: v })} />
+            </div>
+            <Swatches colors={SKIN_TONES.concat(["#d97706", "#64748b", "#b33a3a"])} value={app.skin} onPick={(v) => set({ skin: v })} />
+          </Field>
+          <Field label="Belly / Underside">
+            <div className="flex items-center gap-2">
+              <ColorInput value={app.hair} onChange={(v) => set({ hair: v })} />
+            </div>
+            <Swatches colors={HAIR_COLORS.concat(["#fef3c7", "#ffffff", "#fce7f3"])} value={app.hair} onPick={(v) => set({ hair: v })} />
+          </Field>
+          <Field label="Eye Colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={app.eyes} onChange={(v) => set({ eyes: v })} />
+            </div>
+            <Swatches colors={EYE_COLORS} value={app.eyes} onPick={(v) => set({ eyes: v })} />
+          </Field>
+        </div>
+      )}
+
+      <button
+        onClick={handleAdd}
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-[#e87d0d] py-2.5 text-xs font-bold text-black hover:bg-[#ff9430]"
+      >
+        <Sparkles className="h-4 w-4" /> Save & Add Character to Stage
+      </button>
+    </div>
+  );
+}
+
 function CharactersTab() {
   const addActor = useStudio2d((s) => s.addActor);
   const addCrowd = useStudio2d((s) => s.addCrowd);
   const count = useStudio2d((s) => s.actors.length);
   const [species, setSpecies] = useState<Species>("girl");
+  const [designerOpen, setDesignerOpen] = useState(false);
   const sp = SPECIES_LIST.find((s) => s.id === species) ?? SPECIES_LIST[0];
+
+  if (designerOpen) {
+    return <CustomCharacterDesigner onDone={() => setDesignerOpen(false)} />;
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="space-y-2 p-3 pb-2">
+        <button
+          onClick={() => setDesignerOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-[#e87d0d] bg-[#e87d0d]/20 py-2.5 text-xs font-bold text-[#ffb36b] shadow-lg hover:bg-[#e87d0d]/30"
+        >
+          <Palette className="h-4 w-4 text-[#ffb36b]" />
+          <span>🎨 Design Custom Character & Dress</span>
+        </button>
+
         <div className="rounded-md border border-emerald-400/25 bg-emerald-500/5 p-2">
           <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Background crowd</div>
           <p className="text-[10px] leading-relaxed text-slate-400">5 small walkers in the back layer, crossing the scene from edge to edge.</p>
@@ -76,7 +360,8 @@ function CharactersTab() {
             <Users className="h-3.5 w-3.5" /> + Background crowd
           </button>
         </div>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Add a character</div>
+
+        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Quick Presets</div>
         <div className="flex flex-wrap gap-1">
           {SPECIES_LIST.map((s) => (
             <button
@@ -89,9 +374,6 @@ function CharactersTab() {
             </button>
           ))}
         </div>
-        <div className="text-[10px] text-slate-500">
-          {isAnimalName(species) ? `${species} · choose stance & expression in Actions` : `${species} · ${appearanceCombos().toLocaleString()} looks`}
-        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {!isAnimalName(species) ? (
@@ -99,19 +381,13 @@ function CharactersTab() {
             {Array.from({ length: 12 }, (_, i) => {
               const ap = appearanceFromIndex(i, species);
               return (
-                <button key={i} onClick={() => addActor(i, 640, species)} className="flex flex-col items-center rounded-md border border-white/5 bg-white/[0.03] p-1 hover:border-[#e87d0d]/60">
-                  <svg viewBox="-70 -140 140 170" className="h-14 w-12">
-                    {ap.dress ? (
-                      <>
-                        <path d="M -34 -44 L 34 -44 L 46 30 L -46 30 Z" fill={ap.dressColor} />
-                        <rect x={-40} y={-44} width={80} height={30} rx={18} fill={ap.dressColor} />
-                      </>
-                    ) : (
-                      <rect x={-40} y={-44} width={80} height={84} rx={30} fill={ap.shirt} />
-                    )}
-                    <circle cx={0} cy={-70} r={40} fill={ap.skin} />
-                    <path d="M -40 -80 Q 0 -128 40 -80 Q 30 -102 0 -102 Q -30 -102 -40 -80 Z" fill={ap.hair} />
-                  </svg>
+                <button
+                  key={i}
+                  onClick={() => addActor(i, 640, species)}
+                  className="flex flex-col items-center rounded-md border border-white/5 bg-white/[0.03] p-1 hover:border-[#e87d0d]/60"
+                  title="Click to add to stage"
+                >
+                  <CharacterPreviewSVG app={ap} species={species} className="h-16 w-12" />
                 </button>
               );
             })}
@@ -548,70 +824,146 @@ function ActorEditor({ id }: { id: string }) {
   return (
     <Section title={`${actor.name} · ${SPECIES_LIST.find((s) => s.id === actor.species)?.label ?? actor.species}`}>
       <input value={actor.name} onChange={(e) => patchActor(id, { name: e.target.value })} className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-slate-100 outline-none focus:border-[#e87d0d]/70" />
+
+      <div className="flex justify-center p-1 bg-black/30 rounded-lg border border-white/5">
+        <CharacterPreviewSVG app={a} species={actor.species} className="h-32 w-28" />
+      </div>
+
       {!animal ? (
-        <>
-          <div className="space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
-            <Field label="Skin">
-              <Swatches colors={SKIN_TONES} value={a.skin} onPick={(v) => set({ skin: v })} />
-            </Field>
-            <Field label="Hair colour">
-              <Swatches colors={HAIR_COLORS} value={a.hair} onPick={(v) => set({ hair: v })} />
-            </Field>
-            <Field label="Hair style">
-              <Select value={a.hairStyle} onChange={(v) => set({ hairStyle: v })} options={HAIR_STYLES.map((n, i) => ({ value: i, label: n }))} />
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Beard">
-                <Select value={a.beard ? 1 : 0} onChange={(v) => set({ beard: v === 1 })} options={[{ value: 0, label: "None" }, { value: 1, label: "Full beard" }]} />
-              </Field>
-              {a.beard && (
-                <Field label="Beard colour">
-                  <Swatches colors={HAIR_COLORS} value={a.beardColor} onPick={(v) => set({ beardColor: v })} />
-                </Field>
-              )}
+        <div className="space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#ffb36b]">👗 Dress & Outfit Design</div>
+          
+          <Field label="Outfit / Dress Style">
+            <Select
+              value={a.outfit ?? (a.dress ? 1 : 0)}
+              onChange={(v) => set({ outfit: v, dress: [1, 2, 3, 6].includes(v) })}
+              options={OUTFIT_OPTIONS}
+            />
+          </Field>
+
+          <Field label="Primary Outfit / Dress Colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.outfitColor || a.dressColor || a.shirt} onChange={(v) => set({ outfitColor: v, dressColor: v, shirt: v })} />
             </div>
-            <Field label="Shirt">
-              <Swatches colors={CLOTH} value={a.shirt} onPick={(v) => set({ shirt: v })} />
-            </Field>
-            <Field label="Trousers">
-              <Swatches colors={CLOTH} value={a.pants} onPick={(v) => set({ pants: v })} />
-            </Field>
-            <Field label="Shoes">
-              <Swatches colors={SHOE_COLORS} value={a.shoes} onPick={(v) => set({ shoes: v })} />
-            </Field>
-            <Field label="Eyes">
-              <Swatches colors={EYE_COLORS} value={a.eyes} onPick={(v) => set({ eyes: v })} />
-            </Field>
-            <Field label="Build">
-              <Select value={a.build} onChange={(v) => set({ build: v })} options={BUILDS.map((b) => ({ value: b.v, label: b.label }))} />
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Dress">
-                <Select value={a.dress ? 1 : 0} onChange={(v) => set({ dress: v === 1 })} options={[{ value: 0, label: "No" }, { value: 1, label: "Yes (dress)" }]} />
-              </Field>
-              {a.dress && (
-                <Field label="Dress colour">
-                  <Swatches colors={CLOTH} value={a.dressColor} onPick={(v) => set({ dressColor: v })} />
-                </Field>
-              )}
+            <Swatches colors={CLOTH} value={a.outfitColor || a.dressColor || a.shirt} onPick={(v) => set({ outfitColor: v, dressColor: v, shirt: v })} />
+          </Field>
+
+          <Field label="Accent Colour (Trims, Sash, Lapels, Tie)">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.accentColor || "#facc15"} onChange={(v) => set({ accentColor: v })} />
             </div>
-            <Field label="Hat">
-              <Select value={a.hat} onChange={(v) => set({ hat: v })} options={HATS.map((n, i) => ({ value: i, label: n }))} />
+            <Swatches colors={CLOTH} value={a.accentColor || "#facc15"} onPick={(v) => set({ accentColor: v })} />
+          </Field>
+
+          <Field label="Bottom Cut (Separates)">
+            <Select
+              value={a.bottomCut ?? 0}
+              onChange={(v) => set({ bottomCut: v })}
+              options={BOTTOM_OPTIONS}
+            />
+          </Field>
+
+          <Field label="Trousers / Pants Colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.pants} onChange={(v) => set({ pants: v })} />
+            </div>
+            <Swatches colors={CLOTH} value={a.pants} onPick={(v) => set({ pants: v })} />
+          </Field>
+
+          <Field label="Shoes">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.shoes} onChange={(v) => set({ shoes: v })} />
+            </div>
+            <Swatches colors={SHOE_COLORS} value={a.shoes} onPick={(v) => set({ shoes: v })} />
+          </Field>
+
+          <div className="pt-1 border-t border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#ffb36b]">💇 Hair & Face</div>
+
+          <Field label="Skin">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.skin} onChange={(v) => set({ skin: v })} />
+            </div>
+            <Swatches colors={SKIN_TONES} value={a.skin} onPick={(v) => set({ skin: v })} />
+          </Field>
+          <Field label="Hair colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.hair} onChange={(v) => set({ hair: v })} />
+            </div>
+            <Swatches colors={HAIR_COLORS} value={a.hair} onPick={(v) => set({ hair: v })} />
+          </Field>
+          <Field label="Hair style">
+            <Select value={a.hairStyle} onChange={(v) => set({ hairStyle: v })} options={HAIR_STYLES.map((n, i) => ({ value: i, label: n }))} />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Beard">
+              <Select value={a.beard ? 1 : 0} onChange={(v) => set({ beard: v === 1 })} options={[{ value: 0, label: "None" }, { value: 1, label: "Full beard" }]} />
             </Field>
+            {a.beard && (
+              <Field label="Beard colour">
+                <ColorInput value={a.beardColor} onChange={(v) => set({ beardColor: v })} />
+              </Field>
+            )}
+          </div>
+          <Field label="Eyes">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.eyes} onChange={(v) => set({ eyes: v })} />
+            </div>
+            <Swatches colors={EYE_COLORS} value={a.eyes} onPick={(v) => set({ eyes: v })} />
+          </Field>
+          <Field label="Build">
+            <Select value={a.build} onChange={(v) => set({ build: v })} options={BUILDS.map((b) => ({ value: b.v, label: b.label }))} />
+          </Field>
+
+          <div className="pt-1 border-t border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#ffb36b]">🕶️ Accessories & Hats</div>
+
+          <Field label="Glasses & Eyewear">
+            <Select value={a.glasses ?? 0} onChange={(v) => set({ glasses: v })} options={GLASSES_OPTIONS} />
+          </Field>
+          {!!a.glasses && (
+            <Field label="Glasses Frame Colour">
+              <ColorInput value={a.glassesColor || "#1f2937"} onChange={(v) => set({ glassesColor: v })} />
+            </Field>
+          )}
+
+          <Field label="Neckwear & Accessories">
+            <Select value={a.neckwear ?? 0} onChange={(v) => set({ neckwear: v })} options={NECKWEAR_OPTIONS} />
+          </Field>
+          {!!a.neckwear && (
+            <Field label="Neckwear Colour">
+              <ColorInput value={a.neckwearColor || a.accentColor || "#dc2626"} onChange={(v) => set({ neckwearColor: v })} />
+            </Field>
+          )}
+
+          <Field label="Hat">
+            <Select value={a.hat} onChange={(v) => set({ hat: v })} options={HATS.map((n, i) => ({ value: i, label: n }))} />
+          </Field>
+          {a.hat > 0 && (
             <Field label="Hat colour">
+              <div className="flex items-center gap-2">
+                <ColorInput value={a.hatColor} onChange={(v) => set({ hatColor: v })} />
+              </div>
               <Swatches colors={CLOTH} value={a.hatColor} onPick={(v) => set({ hatColor: v })} />
             </Field>
-          </div>
-        </>
+          )}
+        </div>
       ) : (
         <div className="space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
           <Field label="Body colour">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.skin} onChange={(v) => set({ skin: v })} />
+            </div>
             <Swatches colors={SKIN_TONES.concat(["#d97706", "#64748b", "#b33a3a"])} value={a.skin} onPick={(v) => set({ skin: v })} />
           </Field>
           <Field label="Belly / underside">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.hair} onChange={(v) => set({ hair: v })} />
+            </div>
             <Swatches colors={HAIR_COLORS.concat(["#fef3c7", "#ffffff", "#fce7f3"])} value={a.hair} onPick={(v) => set({ hair: v })} />
           </Field>
           <Field label="Eyes">
+            <div className="flex items-center gap-2">
+              <ColorInput value={a.eyes} onChange={(v) => set({ eyes: v })} />
+            </div>
             <Swatches colors={EYE_COLORS} value={a.eyes} onPick={(v) => set({ eyes: v })} />
           </Field>
         </div>

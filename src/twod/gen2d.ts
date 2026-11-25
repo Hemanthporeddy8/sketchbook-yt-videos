@@ -9,8 +9,44 @@ export const HAIR_COLORS = ["#1b1b1f", "#3b2a1a", "#7a4a20", "#d4a24c", "#f5e6b3
 export const CLOTH = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", "#ec4899", "#111827", "#f8fafc", "#64748b"];
 export const SHOE_COLORS = ["#111827", "#78350f", "#f8fafc", "#dc2626", "#2563eb"];
 export const EYE_COLORS = ["#1f2937", "#2563eb", "#16a34a", "#92400e", "#7c3aed", "#0891b2"];
-export const HAIR_STYLES = ["Bald", "Short", "Long", "Spiky", "Bun", "Afro", "Ponytail", "Curly"];
-export const HATS = ["None", "Cap", "Top hat", "Crown", "Beanie", "Cowboy"];
+export const HAIR_STYLES = ["Bald", "Short", "Long", "Spiky", "Bun", "Afro", "Ponytail", "Curly", "Dreadlocks", "Bob cut", "Mohawk"];
+export const HATS = ["None", "Cap", "Top hat", "Crown", "Beanie", "Cowboy", "Knight Helmet", "Wizard Hat"];
+
+export const OUTFIT_OPTIONS = [
+  { value: 0, label: "👕 Casual Separates (Shirt & Pants)" },
+  { value: 1, label: "👗 Classic A-Line Dress" },
+  { value: 2, label: "👑 Royal Gown / Evening Dress" },
+  { value: 3, label: "🎀 Cute Frock & Pleated Skirt" },
+  { value: 4, label: "👔 Suit & Tie (Formal / Tuxedo)" },
+  { value: 5, label: "🧥 Cozy Hoodie / Streetwear" },
+  { value: 6, label: "👘 Kimono / Robe with Obi Sash" },
+  { value: 7, label: "🥻 Traditional Kurta / Tunic" },
+  { value: 8, label: "🛡️ Superhero / Armor Suit" },
+  { value: 9, label: "🥼 Doctor / Lab Coat" },
+  { value: 10, label: "⚽ Sports Jersey / Athletic" },
+];
+
+export const BOTTOM_OPTIONS = [
+  { value: 0, label: "👖 Standard Trousers" },
+  { value: 1, label: "🩳 Shorts" },
+  { value: 2, label: "👖 Belted Jeans" },
+  { value: 3, label: "👗 Pleated Skirt" },
+];
+
+export const GLASSES_OPTIONS = [
+  { value: 0, label: "None" },
+  { value: 1, label: "👓 Round Spectacles" },
+  { value: 2, label: "🕶️ Cool Sunglasses" },
+  { value: 3, label: "👓 Square Frames" },
+];
+
+export const NECKWEAR_OPTIONS = [
+  { value: 0, label: "None" },
+  { value: 1, label: "👔 Necktie" },
+  { value: 2, label: "🎀 Bow-tie" },
+  { value: 3, label: "🧣 Cozy Scarf" },
+  { value: 4, label: "📿 Necklace / Pendant" },
+];
 export const BUILDS = [
   { label: "Slim", v: 0.86 },
   { label: "Average", v: 1 },
@@ -128,15 +164,23 @@ export function appearanceFromIndex(i: number, species: Species = "human"): Appe
     hatColor: pick(CLOTH),
     dress: false,
     dressColor: pick(CLOTH),
+    outfit: 0,
+    accentColor: pick(CLOTH),
+    bottomCut: 0,
+    glasses: r() < 0.2 ? 1 + Math.floor(r() * (GLASSES_OPTIONS.length - 1)) : 0,
+    glassesColor: pick(["#1f2937", "#0f172a", "#78350f", "#b45309", "#000000"]),
+    neckwear: r() < 0.15 ? 1 + Math.floor(r() * (NECKWEAR_OPTIONS.length - 1)) : 0,
+    neckwearColor: pick(CLOTH),
   };
   if (species === "girl") {
     return {
       ...base,
       skin: pick(SKIN_TONES),
       hair: r() < 0.5 ? pick(["#3b2a1a", "#1b1b1f", "#7a4a20", "#d4a24c", "#b33a3a", "#ff6fb5"]) : base.hair,
-      hairStyle: r() < 0.6 ? 6 : 0,
+      hairStyle: r() < 0.6 ? 6 : 2,
       dress: true,
       dressColor: pick(["#ec4899", "#a855f7", "#f472b6", "#22c55e", "#3b82f6"]),
+      outfit: pick([1, 2, 3]),
       beard: false,
     };
   }

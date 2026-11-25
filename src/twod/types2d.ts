@@ -5,7 +5,7 @@ export type Species = "human" | "girl" | "cat" | "dog" | "bird" | "rabbit" | "fo
 export interface Appearance {
   skin: string;
   hair: string;
-  hairStyle: number; // 0 bald, 1 short, 2 long, 3 spiky, 4 bun, 5 afro, 6 ponytail, 7 curly
+  hairStyle: number; // 0 bald, 1 short, 2 long, 3 spiky, 4 bun, 5 afro, 6 ponytail, 7 curly, 8 dreadlocks, 9 bob cut, 10 mohawk
   beard: boolean;
   beardColor: string;
   shirt: string;
@@ -13,10 +13,17 @@ export interface Appearance {
   shoes: string;
   eyes: string;
   build: number; // 0.86 slim, 1 average, 1.16 stocky
-  hat: number; // 0 none, 1 cap, 2 top hat, 3 crown, 4 beanie, 5 cowboy
+  hat: number; // 0 none, 1 cap, 2 top hat, 3 crown, 4 beanie, 5 cowboy, 6 helmet, 7 wizard
   hatColor: string;
   dress: boolean;
   dressColor: string;
+  outfit?: number; // 0 separates, 1 classic dress, 2 royal gown, 3 cute frock, 4 suit & tie, 5 hoodie, 6 kimono, 7 kurta/tunic, 8 superhero/armor, 9 doctor coat, 10 sports jersey
+  accentColor?: string; // secondary accent color for trims, lapels, sash, tie
+  bottomCut?: number; // 0 standard trousers, 1 shorts, 2 belted jeans, 3 pleated skirt
+  glasses?: number; // 0 none, 1 round spectacles, 2 cool sunglasses, 3 square frames
+  glassesColor?: string;
+  neckwear?: number; // 0 none, 1 necktie, 2 bow-tie, 3 scarf, 4 necklace
+  neckwearColor?: string;
 }
 
 export interface Actor2D {

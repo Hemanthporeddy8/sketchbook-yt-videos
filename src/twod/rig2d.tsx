@@ -41,7 +41,7 @@ const isChild = (sp: Species) => sp === "human" || sp === "girl";
 /* ---------------------------------------------------------------- */
 
 function hairBack(a: Appearance) {
-  if (a.dress) {
+  if (a.hairStyle === 6 || (a.dress && a.hairStyle === 0)) {
     // ponytail falls behind the shoulders
     return (
       <>
@@ -82,13 +82,25 @@ function hairBack(a: Appearance) {
           <circle cx={28} cy={-102} r={24} fill={a.hair} />
         </>
       );
+    case 8: // Dreadlocks
+      return (
+        <>
+          <rect x={-56} y={-95} width={18} height={130} rx={8} fill={a.hair} />
+          <rect x={-32} y={-95} width={18} height={140} rx={8} fill={a.hair} />
+          <rect x={32} y={-95} width={18} height={140} rx={8} fill={a.hair} />
+          <rect x={56} y={-95} width={18} height={130} rx={8} fill={a.hair} />
+        </>
+      );
+    case 9: // Bob cut
+      return <rect x={-56} y={-90} width={112} height={85} rx={22} fill={a.hair} />;
+    case 10: // Mohawk
+      return <path d="M -14 -135 Q 0 -148 14 -135 L 14 -70 L -14 -70 Z" fill={a.hair} />;
     default:
       return null;
   }
 }
 
 function hairFront(a: Appearance) {
-  if (a.dress) return <path d="M -52 -56 Q -54 -104 0 -104 Q 54 -104 52 -56 Q 30 -82 0 -82 Q -30 -82 -52 -56 Z" fill={a.hair} />;
   if (a.hairStyle === 0) return null;
   if (a.hairStyle === 1 || a.hairStyle === 2) {
     return <path d="M -54 -52 Q -56 -110 0 -108 Q 56 -110 54 -52 Q 40 -78 0 -80 Q -40 -78 -54 -52 Z" fill={a.hair} />;
@@ -105,6 +117,21 @@ function hairFront(a: Appearance) {
     );
   }
   if (a.hairStyle === 5) return <path d="M -58 -54 Q -70 -108 0 -110 Q 70 -108 58 -54 Q 30 -80 0 -80 Q -30 -80 -58 -54 Z" fill={a.hair} />;
+  if (a.hairStyle === 8) {
+    return (
+      <>
+        <rect x={-20} y={-85} width={12} height={40} rx={5} fill={a.hair} />
+        <rect x={-4} y={-88} width={12} height={45} rx={5} fill={a.hair} />
+        <rect x={12} y={-85} width={12} height={40} rx={5} fill={a.hair} />
+      </>
+    );
+  }
+  if (a.hairStyle === 9) {
+    return <path d="M -52 -54 Q -54 -100 0 -98 Q 54 -100 52 -54 Q 40 -82 0 -84 Q -40 -82 -52 -54 Z" fill={a.hair} />;
+  }
+  if (a.hairStyle === 10) {
+    return <polygon points="-12,-85 0,-140 12,-85" fill={a.hair} />;
+  }
   return null;
 }
 
@@ -141,8 +168,245 @@ function hatArt(a: Appearance) {
           <rect x={-36} y={-150} width={72} height={56} rx={14} fill={a.hatColor} />
         </>
       );
+    case 6: // Knight Helmet
+      return (
+        <g>
+          <path d="M -54 -40 Q -56 -115 0 -115 Q 56 -115 54 -40 Z" fill="#94a3b8" stroke="#475569" strokeWidth={3} />
+          <rect x={-46} y={-66} width={92} height={16} rx={4} fill="#1e293b" />
+          <line x1={-38} y1={-58} x2={38} y2={-58} stroke="#facc15" strokeWidth={2} />
+          <path d="M -10 -115 Q 0 -145 10 -115" fill={a.hatColor} stroke="#b91c1c" strokeWidth={2} />
+        </g>
+      );
+    case 7: // Wizard Hat
+      return (
+        <g>
+          <ellipse cx={0} cy={-90} rx={76} ry={16} fill={a.hatColor} />
+          <polygon points="-46,-90 0,-185 46,-90" fill={a.hatColor} />
+          <rect x={-32} y={-96} width={64} height={12} fill="#facc15" rx={2} />
+        </g>
+      );
     default:
       return null;
+  }
+}
+
+function glassesArt(a: Appearance) {
+  if (!a.glasses) return null;
+  const col = a.glassesColor || "#1f2937";
+  switch (a.glasses) {
+    case 1: // Round spectacles
+      return (
+        <g>
+          <circle cx={-18} cy={-58} r={15} fill="rgba(255,255,255,0.25)" stroke={col} strokeWidth={3} />
+          <circle cx={18} cy={-58} r={15} fill="rgba(255,255,255,0.25)" stroke={col} strokeWidth={3} />
+          <line x1={-3} y1={-58} x2={3} y2={-58} stroke={col} strokeWidth={3} />
+          <line x1={-33} y1={-58} x2={-48} y2={-54} stroke={col} strokeWidth={2.5} />
+          <line x1={33} y1={-58} x2={48} y2={-54} stroke={col} strokeWidth={2.5} />
+        </g>
+      );
+    case 2: // Sunglasses
+      return (
+        <g>
+          <path d="M -34 -66 L -4 -66 L -8 -48 Q -20 -44 -32 -50 Z" fill="#0f172a" stroke="#000000" strokeWidth={2} />
+          <path d="M 4 -66 L 34 -66 L 32 -50 Q 20 -44 8 -48 Z" fill="#0f172a" stroke="#000000" strokeWidth={2} />
+          <line x1={-4} y1={-64} x2={4} y2={-64} stroke="#0f172a" strokeWidth={3} />
+          <line x1={-26} y1={-62} x2={-14} y2={-53} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <line x1={12} y1={-62} x2={24} y2={-53} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+          <line x1={-34} y1={-64} x2={-48} y2={-55} stroke="#0f172a" strokeWidth={2.5} />
+          <line x1={34} y1={-64} x2={48} y2={-55} stroke="#0f172a" strokeWidth={2.5} />
+        </g>
+      );
+    case 3: // Square frames
+      return (
+        <g>
+          <rect x={-34} y={-68} width={26} height={20} rx={4} fill="rgba(255,255,255,0.2)" stroke={col} strokeWidth={3} />
+          <rect x={8} y={-68} width={26} height={20} rx={4} fill="rgba(255,255,255,0.2)" stroke={col} strokeWidth={3} />
+          <line x1={-8} y1={-58} x2={8} y2={-58} stroke={col} strokeWidth={3} />
+          <line x1={-34} y1={-58} x2={-48} y2={-54} stroke={col} strokeWidth={2.5} />
+          <line x1={34} y1={-58} x2={48} y2={-54} stroke={col} strokeWidth={2.5} />
+        </g>
+      );
+    default:
+      return null;
+  }
+}
+
+function neckwearArt(a: Appearance) {
+  if (!a.neckwear) return null;
+  const col = a.neckwearColor || a.accentColor || "#dc2626";
+  switch (a.neckwear) {
+    case 1: // Necktie
+      return (
+        <g>
+          <polygon points="-7,-4 0,3 7,-4 5,42 0,52 -5,42" fill={col} />
+        </g>
+      );
+    case 2: // Bow-tie
+      return (
+        <g>
+          <polygon points="-16,-6 -2,0 -16,6" fill={col} />
+          <polygon points="16,-6 2,0 16,6" fill={col} />
+          <circle cx={0} cy={0} r={4} fill={col} />
+        </g>
+      );
+    case 3: // Scarf
+      return (
+        <g>
+          <rect x={-24} y={-10} width={48} height={18} rx={7} fill={col} />
+          <path d="M 4 8 L 8 46 L -6 44 L -4 8 Z" fill={col} />
+        </g>
+      );
+    case 4: // Necklace
+      return (
+        <g>
+          <path d="M -22 -10 Q 0 24 22 -10" fill="none" stroke="#facc15" strokeWidth={3} />
+          <circle cx={0} cy={22} r={6} fill={col} stroke="#facc15" strokeWidth={1.5} />
+        </g>
+      );
+    default:
+      return null;
+  }
+}
+
+function outfitTorsoArt(a: Appearance, torsoCol: string, accentCol: string) {
+  const outfit = a.outfit ?? (a.dress ? 1 : 0);
+  switch (outfit) {
+    case 1: // Classic Dress
+      return <path d="M -30 -120 L 30 -120 L 22 -118 L -22 -118 Z" fill="#ffffff" opacity={0.35} />;
+    case 2: // Royal Gown / Evening Dress
+      return (
+        <>
+          <path d="M -36 -124 Q 0 -105 36 -124 Q 24 -96 0 -92 Q -24 -96 -36 -124 Z" fill={accentCol} />
+          <circle cx={0} cy={-92} r={6} fill="#facc15" stroke="#b45309" strokeWidth={1} />
+        </>
+      );
+    case 3: // Cute Frock & Pleated Skirt
+      return (
+        <>
+          <ellipse cx={-18} cy={-124} rx={16} ry={9} fill={accentCol} />
+          <ellipse cx={18} cy={-124} rx={16} ry={9} fill={accentCol} />
+          <circle cx={0} cy={-124} r={4} fill="#f43f5e" />
+        </>
+      );
+    case 4: // Suit & Tie / Formal Tuxedo
+      return (
+        <>
+          <polygon points="-16,-128 0,-68 16,-128" fill="#ffffff" />
+          <path d="M -38 -128 L -16 -128 L -4 -68 L -36 -48 Z" fill={torsoCol} stroke="rgba(0,0,0,0.25)" strokeWidth={2} />
+          <path d="M 38 -128 L 16 -128 L 4 -68 L 36 -48 Z" fill={torsoCol} stroke="rgba(0,0,0,0.25)" strokeWidth={2} />
+          <polygon points="-6,-124 0,-116 6,-124 4,-72 0,-62 -4,-72" fill={accentCol} />
+          <circle cx={0} cy={-40} r={3.5} fill="#111827" />
+          <circle cx={0} cy={-16} r={3.5} fill="#111827" />
+          <line x1={-32} y1={-60} x2={-16} y2={-60} stroke="#ffffff" strokeWidth={2} />
+        </>
+      );
+    case 5: // Cozy Hoodie
+      return (
+        <>
+          <path d={`M ${-28 * a.build} -36 L ${28 * a.build} -36 L ${32 * a.build} -8 L ${-32 * a.build} -8 Z`} fill="rgba(0,0,0,0.14)" stroke="rgba(0,0,0,0.2)" strokeWidth={2} rx={6} />
+          <path d="M -14 -128 Q -18 -98 -10 -88" fill="none" stroke="#f8fafc" strokeWidth={3} strokeLinecap="round" />
+          <path d="M 14 -128 Q 18 -98 10 -88" fill="none" stroke="#f8fafc" strokeWidth={3} strokeLinecap="round" />
+        </>
+      );
+    case 6: // Kimono / Robe
+      return (
+        <>
+          <path d="M -26 -128 L 18 -58" stroke={accentCol} strokeWidth={7} strokeLinecap="round" />
+          <path d="M 26 -128 L -18 -58" stroke={accentCol} strokeWidth={7} strokeLinecap="round" />
+        </>
+      );
+    case 7: // Traditional Kurta / Tunic
+      return (
+        <>
+          <rect x={-6} y={-128} width={12} height={60} fill={accentCol} rx={3} />
+          <circle cx={0} cy={-118} r={2.5} fill="#fef08a" />
+          <circle cx={0} cy={-98} r={2.5} fill="#fef08a" />
+          <circle cx={0} cy={-78} r={2.5} fill="#fef08a" />
+        </>
+      );
+    case 8: // Superhero / Armor Suit
+      return (
+        <>
+          <polygon points="0,-115 24,-92 16,-62 0,-48 -16,-62 -24,-92" fill={accentCol} stroke="#fef08a" strokeWidth={2.5} />
+          <circle cx={0} cy={-82} r={9} fill="#fef08a" />
+          <ellipse cx={-44 * a.build} cy={-118} rx={16} ry={9} fill={accentCol} />
+          <ellipse cx={44 * a.build} cy={-118} rx={16} ry={9} fill={accentCol} />
+        </>
+      );
+    case 9: // Doctor / Lab Coat
+      return (
+        <>
+          <path d="M -48 -128 L -18 -128 L -14 8 L -48 8 Z" fill="#ffffff" stroke="rgba(0,0,0,0.15)" strokeWidth={2} />
+          <path d="M 48 -128 L 18 -128 L 14 8 L 48 8 Z" fill="#ffffff" stroke="rgba(0,0,0,0.15)" strokeWidth={2} />
+          <path d="M -16 -128 Q -20 -80 0 -70 Q 20 -80 16 -128" fill="none" stroke="#334155" strokeWidth={3} strokeLinecap="round" />
+          <circle cx={0} cy={-68} r={5} fill="#cbd5e1" stroke="#334155" strokeWidth={2} />
+        </>
+      );
+    case 10: // Sports Jersey
+      return (
+        <>
+          <polygon points="-16,-128 0,-102 16,-128" fill={accentCol} />
+          <text x={0} y={-60} fontSize={30} fontWeight="900" fill={accentCol} textAnchor="middle" fontFamily="monospace">7</text>
+        </>
+      );
+    default:
+      return null;
+  }
+}
+
+function outfitHipsArt(a: Appearance, dressCol: string, accentCol: string) {
+  const outfit = a.outfit ?? (a.dress ? 1 : 0);
+  switch (outfit) {
+    case 1: // Classic Dress
+      return <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${66 * a.build} 82 L ${-66 * a.build} 82 Z`} fill={dressCol} />;
+    case 2: // Royal Gown / Evening Dress
+      return (
+        <>
+          <path d={`M ${-44 * a.build} -16 L ${44 * a.build} -16 C ${62 * a.build} 20 ${88 * a.build} 80 ${94 * a.build} 140 L ${-94 * a.build} 140 C ${-88 * a.build} 80 ${-62 * a.build} 20 ${-44 * a.build} -16 Z`} fill={dressCol} />
+          <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${34 * a.build} -4 L ${-34 * a.build} -4 Z`} fill={accentCol} />
+        </>
+      );
+    case 3: // Cute Frock & Pleated Skirt
+      return (
+        <>
+          <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${60 * a.build} 58 L ${-60 * a.build} 58 Z`} fill={dressCol} />
+          <line x1={-20} y1={-16} x2={-30} y2={58} stroke={accentCol} strokeWidth={2} />
+          <line x1={0} y1={-16} x2={0} y2={58} stroke={accentCol} strokeWidth={2} />
+          <line x1={20} y1={-16} x2={30} y2={58} stroke={accentCol} strokeWidth={2} />
+        </>
+      );
+    case 6: // Kimono / Robe
+      return (
+        <>
+          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${46 * a.build} 128 L ${-46 * a.build} 128 Z`} fill={dressCol} />
+          <rect x={-42 * a.build} y={-16} width={84 * a.build} height={32} fill={accentCol} rx={3} />
+        </>
+      );
+    case 7: // Kurta / Tunic
+      return (
+        <>
+          <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={16} fill={a.pants} />
+          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${44 * a.build} 52 L ${-44 * a.build} 52 Z`} fill={dressCol} />
+          <line x1={0} y1={10} x2={0} y2={52} stroke="rgba(0,0,0,0.2)" strokeWidth={2} />
+        </>
+      );
+    default:
+      if (a.bottomCut === 1) { // Shorts
+        return <rect x={-40 * a.build} y={-16} width={80 * a.build} height={28} rx={12} fill={a.pants} />;
+      }
+      if (a.bottomCut === 2) { // Belted Jeans
+        return (
+          <>
+            <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={14} fill={a.pants} />
+            <rect x={-40 * a.build} y={-16} width={80 * a.build} height={10} fill="#3b2210" />
+            <rect x={-10} y={-17} width={20} height={12} rx={2} fill="#facc15" stroke="#78350f" strokeWidth={1.5} />
+          </>
+        );
+      }
+      if (a.bottomCut === 3) { // Skirt
+        return <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${60 * a.build} 58 L ${-60 * a.build} 58 Z`} fill={a.pants} />;
+      }
+      return <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={16} fill={a.pants} />;
   }
 }
 
@@ -154,10 +418,12 @@ function beardArt(a: Appearance) {
 }
 
 function limbLeg(p: "l" | "r", a: Appearance, rf: RefFn) {
-  const legColor = a.dress ? a.skin : a.pants;
+  const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
+  const isShorts = a.bottomCut === 1;
+  const legColor = isDress || isShorts ? a.skin : a.pants;
   return (
     <g ref={rf(`${p}UpperLeg`)}>
-      <line x1={0} y1={0} x2={0} y2={85} stroke={legColor} strokeWidth={28} strokeLinecap="round" />
+      <line x1={0} y1={0} x2={0} y2={85} stroke={isShorts ? a.pants : legColor} strokeWidth={28} strokeLinecap="round" />
       <g ref={rf(`${p}LowerLeg`)}>
         <line x1={0} y1={0} x2={0} y2={82} stroke={legColor} strokeWidth={24} strokeLinecap="round" />
         <ellipse cx={8} cy={88} rx={20} ry={10} fill={a.shoes} />
@@ -167,9 +433,11 @@ function limbLeg(p: "l" | "r", a: Appearance, rf: RefFn) {
 }
 
 function limbArm(p: "l" | "r", a: Appearance, rf: RefFn) {
+  const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
+  const sleeveColor = a.outfit === 2 ? a.skin : (isDress ? (a.outfitColor || a.dressColor || a.shirt) : a.shirt);
   return (
     <g ref={rf(`${p}UpperArm`)}>
-      <line x1={0} y1={0} x2={0} y2={62} stroke={a.dress ? a.skin : a.shirt} strokeWidth={22} strokeLinecap="round" />
+      <line x1={0} y1={0} x2={0} y2={62} stroke={sleeveColor} strokeWidth={22} strokeLinecap="round" />
       <g ref={rf(`${p}LowerArm`)}>
         <line x1={0} y1={0} x2={0} y2={58} stroke={a.skin} strokeWidth={18} strokeLinecap="round" />
         <circle cx={0} cy={60} r={13} fill={a.skin} />
@@ -180,19 +448,19 @@ function limbArm(p: "l" | "r", a: Appearance, rf: RefFn) {
 
 function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }) {
   const a = actor.app;
+  const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
+  const dressCol = a.outfitColor || a.dressColor || a.shirt;
+  const accentCol = a.accentColor || "#facc15";
+  const torsoCol = isDress ? dressCol : a.shirt;
   return (
     <>
       <g ref={rf("hips")}>
-        {a.dress ? (
-          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${66 * a.build} 82 L ${-66 * a.build} 82 Z`} fill={a.dressColor} />
-        ) : (
-          <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={16} fill={a.pants} />
-        )}
+        {outfitHipsArt(a, dressCol, accentCol)}
         {limbLeg("l", a, rf)}
         {limbLeg("r", a, rf)}
         <g ref={rf("spine")}>
-          <rect x={-48 * a.build} y={-128} width={96 * a.build} height={136} rx={34} fill={a.dress ? a.dressColor : a.shirt} />
-          {a.dress && <path d="M -30 -120 L 30 -120 L 22 -118 L -22 -118 Z" fill="#ffffff" opacity={0.35} />}
+          <rect x={-48 * a.build} y={-128} width={96 * a.build} height={136} rx={34} fill={torsoCol} />
+          {outfitTorsoArt(a, torsoCol, accentCol)}
           {limbArm("l", a, rf)}
           {limbArm("r", a, rf)}
           <g ref={rf("head")}>
@@ -218,7 +486,9 @@ function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom })
             {beardArt(a)}
             <path ref={(el) => { d.mouth = el; }} d="M -14 -30 Q 0 -30 14 -30" fill="none" stroke="#3b1d1d" strokeWidth={4} strokeLinecap="round" />
             {hairFront(a)}
+            {glassesArt(a)}
             {hatArt(a)}
+            {neckwearArt(a)}
           </g>
         </g>
       </g>
@@ -801,3 +1071,78 @@ export function Figure2D({
 }
 
 export { isChild };
+
+export function CharacterPreviewSVG({ app: a, species = "human", className = "h-28 w-24" }: { app: Appearance; species?: Species; className?: string }) {
+  if (species !== "human" && species !== "girl") {
+    return (
+      <div className={`flex flex-col items-center justify-center rounded-lg bg-black/40 p-2 ${className}`}>
+        <span className="text-4xl">{species === "cat" ? "🐱" : species === "dog" ? "🐶" : species === "bird" ? "🐦" : species === "rabbit" ? "🐰" : species === "fox" ? "🦊" : species === "bear" ? "🐻" : species === "pig" ? "🐷" : "🐼"}</span>
+        <span className="mt-1 text-[11px] font-semibold capitalize text-slate-300">{species}</span>
+      </div>
+    );
+  }
+
+  const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
+  const dressCol = a.outfitColor || a.dressColor || a.shirt;
+  const accentCol = a.accentColor || "#facc15";
+  const torsoCol = isDress ? dressCol : a.shirt;
+
+  return (
+    <svg viewBox="-80 -185 160 270" className={`overflow-visible rounded-lg bg-black/40 ${className}`}>
+      {/* Shadow */}
+      <ellipse cx={0} cy={76} rx={44} ry={8} fill="rgba(0,0,0,0.3)" />
+
+      {/* Legs & Shoes */}
+      <g>
+        <line x1={-18} y1={-10} x2={-18} y2={64} stroke={isDress || a.bottomCut === 1 ? a.skin : a.pants} strokeWidth={24} strokeLinecap="round" />
+        {a.bottomCut === 1 && <line x1={-18} y1={-10} x2={-18} y2={18} stroke={a.pants} strokeWidth={24} strokeLinecap="round" />}
+        <ellipse cx={-18} cy={68} rx={16} ry={8} fill={a.shoes} />
+
+        <line x1={18} y1={-10} x2={18} y2={64} stroke={isDress || a.bottomCut === 1 ? a.skin : a.pants} strokeWidth={24} strokeLinecap="round" />
+        {a.bottomCut === 1 && <line x1={18} y1={-10} x2={18} y2={18} stroke={a.pants} strokeWidth={24} strokeLinecap="round" />}
+        <ellipse cx={18} cy={68} rx={16} ry={8} fill={a.shoes} />
+      </g>
+
+      {/* Hips / Skirt / Dress bottom */}
+      <g>{outfitHipsArt(a, dressCol, accentCol)}</g>
+
+      {/* Torso */}
+      <g>
+        <rect x={-42 * a.build} y={-118} width={84 * a.build} height={122} rx={28} fill={torsoCol} />
+        {outfitTorsoArt(a, torsoCol, accentCol)}
+      </g>
+
+      {/* Arms */}
+      <g>
+        <line x1={-44 * a.build} y1={-108} x2={-46 * a.build} y2={-52} stroke={a.outfit === 2 ? a.skin : (isDress ? dressCol : a.shirt)} strokeWidth={18} strokeLinecap="round" />
+        <line x1={-46 * a.build} y1={-52} x2={-46 * a.build} y2={-8} stroke={a.skin} strokeWidth={15} strokeLinecap="round" />
+        <circle cx={-46 * a.build} cy={-6} r={11} fill={a.skin} />
+
+        <line x1={44 * a.build} y1={-108} x2={46 * a.build} y2={-52} stroke={a.outfit === 2 ? a.skin : (isDress ? dressCol : a.shirt)} strokeWidth={18} strokeLinecap="round" />
+        <line x1={46 * a.build} y1={-52} x2={46 * a.build} y2={-8} stroke={a.skin} strokeWidth={15} strokeLinecap="round" />
+        <circle cx={46 * a.build} cy={-6} r={11} fill={a.skin} />
+      </g>
+
+      {/* Head & Face */}
+      <g transform="translate(0 -115)">
+        {hairBack(a)}
+        <circle cx={-45} cy={-48} r={9} fill={a.skin} />
+        <circle cx={45} cy={-48} r={9} fill={a.skin} />
+        <circle cx={0} cy={-48} r={46} fill={a.skin} />
+        <ellipse cx={0} cy={-40} rx={4} ry={3} fill="rgba(90,40,25,0.35)" />
+        <ellipse cx={-16} cy={-50} rx={10} ry={12} fill="#ffffff" stroke="#1f2937" strokeWidth={2} />
+        <ellipse cx={16} cy={-50} rx={10} ry={12} fill="#ffffff" stroke="#1f2937" strokeWidth={2} />
+        <circle cx={-16} cy={-50} r={5.5} fill={a.eyes} />
+        <circle cx={16} cy={-50} r={5.5} fill={a.eyes} />
+        <line x1={-26} y1={-70} x2={-6} y2={-70} stroke={a.hair} strokeWidth={5} strokeLinecap="round" />
+        <line x1={6} y1={-70} x2={26} y2={-70} stroke={a.hair} strokeWidth={5} strokeLinecap="round" />
+        {beardArt(a)}
+        <path d="M -12 -26 Q 0 -22 12 -26" fill="none" stroke="#3b1d1d" strokeWidth={3.5} strokeLinecap="round" />
+        {hairFront(a)}
+        {glassesArt(a)}
+        {hatArt(a)}
+        {neckwearArt(a)}
+      </g>
+    </svg>
+  );
+}
