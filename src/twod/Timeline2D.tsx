@@ -1,5 +1,5 @@
 import { useState, type PointerEvent as RPointerEvent } from "react";
-import { Footprints, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
+import { Footprints, Moon, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
 import { useStudio2d } from "./store2d";
 import { SCENE_KINDS } from "./gen2d";
 import { clock2d, projectDuration } from "./anim2d";
@@ -22,6 +22,7 @@ function beginDrag(e: RPointerEvent<HTMLElement> | PointerEvent, pps: number, ap
 }
 
 function clipLabel(c: Clip2D) {
+  if (c.kind === "rest" || c.stance === "rest") return "🌙 Rest (Off-stage)";
   if (c.kind === "walk") return `Walk to ${Math.round(c.toX)}${c.say ? ` · "${c.say}"` : ""}`;
   const name = ACTION_NAME[`${c.stance}|${c.gesture}`] ?? c.stance;
   return `${name} · ${c.expression}${c.say ? ` · "${c.say}"` : ""}`;
@@ -89,6 +90,24 @@ export function Timeline2D() {
     });
   };
 
+  const addRest = (id: string) => {
+    addClip({
+      actorId: id,
+      start: Math.round(t * 10) / 10,
+      duration: 3,
+      kind: "rest",
+      stance: "rest",
+      gesture: "none",
+      expression: "neutral",
+      speed: 1,
+      intensity: 1,
+      mirror: false,
+      phase: 0,
+      talk: false,
+      say: "",
+    });
+  };
+
   const addDrive = (id: string) => {
     const o = objects.find((x) => x.id === id);
     const base = o ? Math.round(o.x + 280) : 900;
@@ -141,6 +160,14 @@ export function Timeline2D() {
             className="flex items-center gap-1 rounded-md bg-[#e87d0d]/20 px-2 py-1 text-[11px] text-[#ffb36b] hover:bg-[#e87d0d]/30 disabled:opacity-40"
           >
             <Plus className="h-3 w-3" /> Action at playhead
+          </button>
+          <button
+            disabled={!actorId}
+            onClick={() => actorId && addRest(actorId)}
+            className="flex items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/15 px-2 py-1 text-[11px] text-indigo-200 hover:bg-indigo-500/25 disabled:opacity-40"
+            title="Make character rest off-stage (hidden) during this time"
+          >
+            <Moon className="h-3 w-3 text-indigo-300" /> Rest
           </button>
           <button
             disabled={!objectId}
@@ -242,8 +269,12 @@ export function Timeline2D() {
                         beginDrag(e, pps, (dx) => patchClip(c.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
                       }}
                       className={cn(
-                        "absolute top-1.5 flex h-9 cursor-grab select-none items-center overflow-hidden rounded-md border px-2 text-[10px] text-white",
-                        c.kind === "walk" ? "border-emerald-400/60 bg-emerald-600/50" : "border-[#e87d0d]/60 bg-[#e87d0d]/35",
+                        "absolute top-1.5 flex h-9 cursor-grab select-none items-center overflow-hidden rounded-md border px-2 text-[10px]",
+                        c.kind === "rest" || c.stance === "rest"
+                          ? "border-indigo-400/50 bg-slate-800/90 text-indigo-200 border-dashed"
+                          : c.kind === "walk"
+                            ? "border-emerald-400/60 bg-emerald-600/50 text-white"
+                            : "border-[#e87d0d]/60 bg-[#e87d0d]/35 text-white",
                         selected?.kind === "clip" && selected.id === c.id && "ring-2 ring-white",
                       )}
                       style={{ left: c.start * pps, width: Math.max(30, c.duration * pps) }}

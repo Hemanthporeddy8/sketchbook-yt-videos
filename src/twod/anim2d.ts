@@ -57,6 +57,7 @@ export interface ActorFrame extends Pose2D {
   grounded: boolean;
   species: string;
   t: number;
+  hidden?: boolean;
 }
 
 const IDLE: Clip2D = {
@@ -168,6 +169,7 @@ export function evalActor(a: Actor2D, clips: Clip2D[], t: number): ActorFrame {
   let active: Clip2D | null = null;
   for (const c of clips) if (t >= c.start && t < c.start + c.duration) active = c;
   const walking = active?.kind === "walk";
+  const hidden = active?.kind === "rest" || active?.stance === "rest";
   let pose = active ? poseOf(active, t - active.start, walking ? speedMs : 0, walking ? gait : 0) : poseOf(IDLE, t, 0, 0);
 
   if (active && t - active.start < XFADE) {
@@ -181,7 +183,7 @@ export function evalActor(a: Actor2D, clips: Clip2D[], t: number): ActorFrame {
     }
   }
 
-  return { x, facing, angles: pose.angles, py: pose.py, face: pose.face, bubble: active?.say ?? "", gait, speedMs, grounded: true, species: "", t };
+  return { x, facing, angles: pose.angles, py: pose.py, face: pose.face, bubble: hidden ? "" : (active?.say ?? ""), gait, speedMs, grounded: true, species: "", t, hidden };
 }
 
 /** The background to draw right now: the scene clip whose window includes t, else the default scene. */

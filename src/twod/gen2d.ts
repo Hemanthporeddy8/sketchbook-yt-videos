@@ -66,11 +66,15 @@ export const INTENSITY_OPTIONS = [0.5, 1, 1.5];
 export const PHASE_OPTIONS = [0, 1, 2, 3];
 
 export const ACTION_NAME: Record<string, string> = Object.fromEntries(SANDBOX_ACTIONS.map((a) => [a.id, a.name]));
-export const STANCE_OPTIONS = STANCES.map((s) => ({ value: s.id, label: s.name }));
+export const STANCE_OPTIONS = [
+  { value: "rest", label: "🌙 Rest (Off-stage)" },
+  ...STANCES.map((s) => ({ value: s.id, label: s.name })),
+];
 export const GESTURE_OPTIONS = GESTURES.map((g) => ({ value: g.id, label: g.id === "none" ? "(no gesture)" : g.name }));
 export const EXPRESSION_OPTIONS = EXPRESSION_LIST.map((e) => ({ value: e, label: e[0].toUpperCase() + e.slice(1) }));
 
 export const ANIMAL_STANCE_OPTIONS: { value: string; label: string }[] = [
+  { value: "rest", label: "🌙 Rest (Off-stage)" },
   { value: "idle", label: "Idle" },
   { value: "sit", label: "Sit" },
   { value: "sleep", label: "Sleep" },

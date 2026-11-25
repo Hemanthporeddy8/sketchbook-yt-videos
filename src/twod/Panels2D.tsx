@@ -679,11 +679,12 @@ function ClipEditor({ id }: { id: string }) {
   if (!clip) return null;
   if (clip.kind !== "drive" && !actor) return null;
   if (clip.kind === "drive" && !obj) return null;
+  const isRest = clip.kind === "rest" || clip.stance === "rest";
   const animal = actor ? isAnimalName(actor.species) : false;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const p = (patch: Parameters<typeof patchClip>[1]) => patchClip(id, patch);
   return (
-    <Section title={clip.kind === "walk" ? "Clip · walk" : clip.kind === "drive" ? "🚗 Clip · drive" : "Clip · action"}>
+    <Section title={isRest ? "🌙 Clip · Rest (Off-stage)" : clip.kind === "walk" ? "Clip · walk" : clip.kind === "drive" ? "🚗 Clip · drive" : "Clip · action"}>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Start (s)">
           <NumberInput value={clip.start} min={0} step={0.1} onChange={(v) => p({ start: Math.max(0, v) })} />
@@ -692,7 +693,11 @@ function ClipEditor({ id }: { id: string }) {
           <NumberInput value={clip.duration} min={0.2} step={0.1} onChange={(v) => p({ duration: Math.max(0.2, v) })} />
         </Field>
       </div>
-      {clip.kind === "walk" ? (
+      {isRest ? (
+        <div className="rounded-md border border-indigo-500/25 bg-indigo-500/10 p-2.5 text-[11px] leading-relaxed text-indigo-200">
+          🌙 <b>Resting off-stage:</b> {actor?.name ?? "This character"} is hidden during this clip. When this clip ends, they will reappear for their next action.
+        </div>
+      ) : clip.kind === "walk" ? (
         <Field label="Walk to x (px)">
           <NumberInput value={Math.round(clip.toX)} step={10} onChange={(v) => p({ toX: v })} />
         </Field>
@@ -737,9 +742,11 @@ function ClipEditor({ id }: { id: string }) {
           </div>
         </>
       )}
-      <Field label="Speech bubble">
-        <input value={clip.say} onChange={(e) => p({ say: e.target.value })} placeholder="(none)" className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-slate-100 outline-none focus:border-[#e87d0d]/70" />
-      </Field>
+      {!isRest && (
+        <Field label="Speech bubble">
+          <input value={clip.say} onChange={(e) => p({ say: e.target.value })} placeholder="(none)" className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-slate-100 outline-none focus:border-[#e87d0d]/70" />
+        </Field>
+      )}
       <button onClick={removeSelected} className="flex w-full items-center justify-center gap-1 rounded-md bg-red-500/15 py-1.5 text-[11px] text-red-300 hover:bg-red-500/25">
         <Trash2 className="h-3 w-3" /> Delete clip
       </button>

@@ -52,7 +52,7 @@ export interface Clip2D {
   actorId: string;
   start: number;
   duration: number;
-  kind: "act" | "walk" | "drive";
+  kind: "act" | "walk" | "drive" | "rest";
   stance: string;
   gesture: string;
   expression: string;

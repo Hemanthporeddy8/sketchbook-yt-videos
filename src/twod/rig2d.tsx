@@ -675,7 +675,15 @@ function applyFace(d: FigDom, s: NonNullable<ActorFrame["face"]>) {
 }
 
 export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: number) {
-  if (d.outer) d.outer.setAttribute("transform", `translate(${f.x} ${groundY}) scale(${scale * f.facing} ${scale})`);
+  if (f.hidden) {
+    if (d.outer) d.outer.setAttribute("display", "none");
+    if (d.bubble) d.bubble.setAttribute("display", "none");
+    return;
+  }
+  if (d.outer) {
+    d.outer.removeAttribute("display");
+    d.outer.setAttribute("transform", `translate(${f.x} ${groundY}) scale(${scale * f.facing} ${scale})`);
+  }
 
   if (isAnimal(d.species)) {
     const g = f.gait;
