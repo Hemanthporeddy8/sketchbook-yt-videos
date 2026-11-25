@@ -230,138 +230,377 @@ function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom })
 /* Animals                                                           */
 /* ---------------------------------------------------------------- */
 
+function animalTailArt(sp: Species, body: string, belly: string) {
+  if (sp === "bird") {
+    return <path d="M 0 0 C -12 -6 -28 -14 -34 -6 C -38 0 -24 6 0 2 Z" fill={body} filter="brightness(0.9)" />;
+  }
+  if (sp === "rabbit") {
+    return <circle cx={-6} cy={-4} r={11} fill="#ffffff" stroke="rgba(0,0,0,0.12)" strokeWidth={1.5} />;
+  }
+  if (sp === "bear" || sp === "panda") {
+    return <circle cx={-6} cy={-2} r={9} fill={sp === "panda" ? "#111827" : body} />;
+  }
+  if (sp === "pig") {
+    return (
+      <path
+        d="M 0 0 Q -10 -8 -6 -18 Q -2 -26 -14 -20 Q -18 -14 -12 -8"
+        fill="none"
+        stroke={body}
+        strokeWidth={5}
+        strokeLinecap="round"
+      />
+    );
+  }
+  if (sp === "fox") {
+    return (
+      <g>
+        <path d="M 0 0 C -18 -8 -44 -14 -42 -36 C -40 -48 -24 -46 -18 -32 C -12 -18 -6 -8 2 -2 Z" fill={body} />
+        <path d="M -30 -30 C -42 -32 -42 -36 -42 -36 C -40 -48 -24 -46 -22 -36 Z" fill="#fef3c7" />
+      </g>
+    );
+  }
+  if (sp === "dog") {
+    return <path d="M 0 0 C -8 -12 -14 -26 -6 -38 C -2 -42 4 -38 2 -32 C -2 -22 0 -10 4 -2 Z" fill={body} />;
+  }
+  // Cat: graceful curling upright tail
+  return (
+    <path
+      d="M 0 0 C -10 -8 -18 -24 -14 -42 C -12 -48 -4 -46 -8 -38 C -12 -26 -4 -14 4 -2 Z"
+      fill={body}
+      stroke={body}
+      strokeWidth={3}
+      strokeLinecap="round"
+    />
+  );
+}
+
+function animalLegArt(sp: Species, bodyColor: string, isFar: boolean) {
+  const shade = isFar ? "brightness(0.82) saturate(0.9)" : "none";
+  if (sp === "bird") {
+    return (
+      <g style={{ filter: shade }}>
+        <line x1={0} y1={0} x2={0} y2={38} stroke="#f59e0b" strokeWidth={4} strokeLinecap="round" />
+        <path d="M -8 40 L 0 38 L 8 40 M 0 38 L 0 42" stroke="#f59e0b" strokeWidth={3} strokeLinecap="round" fill="none" />
+      </g>
+    );
+  }
+  return (
+    <g style={{ filter: shade }}>
+      <path
+        d="M -9 0 C -12 14 -10 26 -7 36 L -7 38 C -7 42 -2 44 8 44 C 13 44 14 40 12 36 L 9 24 C 8 14 7 4 5 0 Z"
+        fill={bodyColor}
+      />
+      <line x1={1} y1={40} x2={1} y2={44} stroke="rgba(0,0,0,0.2)" strokeWidth={1.5} />
+      <line x1={6} y1={40} x2={6} y2={44} stroke="rgba(0,0,0,0.2)" strokeWidth={1.5} />
+    </g>
+  );
+}
+
+function animalBodyArt(sp: Species, body: string, belly: string) {
+  if (sp === "bird") {
+    return (
+      <>
+        <ellipse cx={2} cy={-48} rx={36} ry={26} fill={body} />
+        <ellipse cx={16} cy={-42} rx={18} ry={18} fill={belly} opacity={0.9} />
+        <path
+          d="M -16 -56 C 2 -60 22 -52 14 -38 C 6 -28 -12 -36 -28 -42 C -34 -44 -26 -52 -16 -56 Z"
+          fill={body}
+          filter="brightness(0.92)"
+          stroke="rgba(0,0,0,0.15)"
+          strokeWidth={1.5}
+        />
+      </>
+    );
+  }
+
+  if (sp === "rabbit") {
+    return (
+      <>
+        <path
+          d="M -44 -48 C -42 -66 -10 -68 18 -62 C 34 -58 42 -44 38 -34 C 32 -20 8 -24 -16 -24 C -36 -24 -46 -34 -44 -48 Z"
+          fill={body}
+        />
+        <ellipse cx={12} cy={-38} rx={22} ry={14} fill={belly} opacity={0.9} />
+        <ellipse cx={-26} cy={-36} rx={18} ry={16} fill={body} filter="brightness(0.96)" />
+      </>
+    );
+  }
+
+  if (sp === "pig") {
+    return (
+      <>
+        <ellipse cx={-2} cy={-46} rx={48} ry={28} fill={body} />
+        <ellipse cx={2} cy={-38} rx={36} ry={16} fill={belly} opacity={0.85} />
+      </>
+    );
+  }
+
+  if (sp === "panda") {
+    return (
+      <>
+        <ellipse cx={-2} cy={-48} rx={46} ry={27} fill="#ffffff" />
+        <path d="M 8 -72 C 24 -70 42 -58 38 -32 C 34 -24 20 -22 14 -28 C 8 -36 10 -60 8 -72 Z" fill="#111827" />
+        <path d="M -46 -54 C -48 -70 -26 -72 -20 -58 C -16 -46 -22 -24 -36 -24 C -46 -24 -48 -44 -46 -54 Z" fill="#111827" />
+      </>
+    );
+  }
+
+  if (sp === "bear") {
+    return (
+      <>
+        <ellipse cx={-2} cy={-50} rx={50} ry={29} fill={body} />
+        <ellipse cx={6} cy={-42} rx={34} ry={18} fill={belly} opacity={0.7} />
+      </>
+    );
+  }
+
+  // Cat, Dog, Fox (sleek quadruped silhouette)
+  return (
+    <>
+      <path
+        d="M -44 -48 C -42 -64 -10 -66 18 -62 C 34 -58 44 -46 40 -34 C 34 -22 12 -26 -14 -26 C -34 -26 -46 -36 -44 -48 Z"
+        fill={body}
+      />
+      <path
+        d="M 6 -56 C 24 -54 36 -46 32 -36 C 28 -28 12 -28 -2 -28 C 4 -38 4 -48 6 -56 Z"
+        fill={belly}
+        opacity={0.9}
+      />
+      <circle cx={-30} cy={-42} r={18} fill={body} filter="brightness(0.97)" opacity={0.7} />
+    </>
+  );
+}
+
 function FigureAnimal({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }) {
   const a = actor.app;
   const sp = actor.species;
   const body = a.skin;
   const belly = a.hair;
   const ear = a.skin;
-  // proportional side view, origin at bottom-centre, head on the +x (front) side
-  const headX = 58;
-  const headY = -92;
-  const headR = sp === "bird" ? 22 : 27;
+  const headX = 46;
+  const headY = -86;
+  const headR = sp === "bird" ? 18 : 24;
 
   const earArt = () => {
-    if (sp === "rabbit")
+    if (sp === "rabbit") {
       return (
         <>
-          <ellipse cx={headX - 10} cy={headY - 40} rx={8} ry={36} fill={ear} />
-          <ellipse cx={headX - 10} cy={headY - 38} rx={4} ry={24} fill="#f9a8d4" />
-          <ellipse cx={headX + 10} cy={headY - 40} rx={8} ry={36} fill={ear} />
-          <ellipse cx={headX + 10} cy={headY - 38} rx={4} ry={24} fill="#f9a8d4" />
+          <ellipse cx={headX - 8} cy={headY - 34} rx={7} ry={30} fill={ear} transform={`rotate(-6 ${headX - 8} ${headY - 34})`} />
+          <ellipse cx={headX - 8} cy={headY - 32} rx={3.5} ry={20} fill="#f9a8d4" transform={`rotate(-6 ${headX - 8} ${headY - 32})`} />
+          <ellipse cx={headX + 10} cy={headY - 34} rx={7} ry={30} fill={ear} transform={`rotate(8 ${headX + 10} ${headY - 34})`} />
+          <ellipse cx={headX + 10} cy={headY - 32} rx={3.5} ry={20} fill="#f9a8d4" transform={`rotate(8 ${headX + 10} ${headY - 32})`} />
         </>
       );
-    if (sp === "bird") return null;
-    if (sp === "bear" || sp === "panda")
+    }
+    if (sp === "bird") {
+      return (
+        <path d={`M ${headX - 4} ${headY - 18} Q ${headX - 12} ${headY - 34} ${headX + 2} ${headY - 26}`} stroke={body} strokeWidth={4} strokeLinecap="round" fill="none" />
+      );
+    }
+    if (sp === "bear") {
       return (
         <>
-          <circle cx={headX - 26} cy={headY - 28} r={14} fill={ear} />
-          <circle cx={headX + 26} cy={headY - 28} r={14} fill={ear} />
+          <circle cx={headX - 16} cy={headY - 22} r={11} fill={ear} />
+          <circle cx={headX - 16} cy={headY - 22} r={6} fill={belly} opacity={0.6} />
+          <circle cx={headX + 16} cy={headY - 22} r={11} fill={ear} />
+          <circle cx={headX + 16} cy={headY - 22} r={6} fill={belly} opacity={0.6} />
         </>
       );
-    if (sp === "dog")
+    }
+    if (sp === "panda") {
       return (
         <>
-          <path d={`M ${headX - 22} ${headY - 14} Q ${headX - 32} ${headY + 22} ${headX - 2} ${headY + 6} Z`} fill="#1f2937" />
-          <path d={`M ${headX + 22} ${headY - 14} Q ${headX + 32} ${headY + 22} ${headX + 2} ${headY + 6} Z`} fill="#1f2937" />
+          <circle cx={headX - 16} cy={headY - 22} r={11} fill="#111827" />
+          <circle cx={headX + 16} cy={headY - 22} r={11} fill="#111827" />
         </>
       );
-    if (sp === "pig")
+    }
+    if (sp === "dog") {
       return (
         <>
-          <path d={`M ${headX - 18} ${headY - 20} L ${headX - 6} ${headY - 48} L ${headX + 4} ${headY - 22} Z`} fill={ear} />
-          <path d={`M ${headX + 16} ${headY - 20} L ${headX + 8} ${headY - 46} L ${headX + 18} ${headY - 22} Z`} fill={ear} />
+          <path d={`M ${headX - 14} ${headY - 12} C ${headX - 22} ${headY + 12} ${headX - 10} ${headY + 24} ${headX - 2} ${headY + 10} Z`} fill={ear} filter="brightness(0.9)" />
+          <path d={`M ${headX + 12} ${headY - 12} C ${headX + 24} ${headY + 12} ${headX + 16} ${headY + 26} ${headX + 6} ${headY + 10} Z`} fill={ear} />
         </>
       );
-    const inner = sp === "fox" ? "#fef3c7" : "#f472b6";
+    }
+    if (sp === "pig") {
+      return (
+        <>
+          <polygon points={`${headX - 18},${headY - 10} ${headX - 10},${headY - 30} ${headX - 2},${headY - 14}`} fill={ear} />
+          <polygon points={`${headX + 6},${headY - 14} ${headX + 16},${headY - 30} ${headX + 22},${headY - 8}`} fill={ear} />
+        </>
+      );
+    }
+    if (sp === "fox") {
+      return (
+        <>
+          <polygon points={`${headX - 18},${headY - 10} ${headX - 10},${headY - 42} ${headX + 2},${headY - 14}`} fill="#111827" />
+          <polygon points={`${headX - 15},${headY - 12} ${headX - 10},${headY - 36} ${headX},${headY - 15}`} fill="#fef3c7" />
+          <polygon points={`${headX + 8},${headY - 12} ${headX + 20},${headY - 42} ${headX + 26},${headY - 10}`} fill="#111827" />
+          <polygon points={`${headX + 11},${headY - 13} ${headX + 19},${headY - 36} ${headX + 24},${headY - 12}`} fill="#fef3c7" />
+        </>
+      );
+    }
+    // Cat: alert cute pointed ears
     return (
       <>
-        <path d={`M ${headX - 26} ${headY - 12} L ${headX - 16} ${headY - 50} L ${headX - 2} ${headY - 14} Z`} fill={ear} />
-        <path d={`M ${headX + 26} ${headY - 12} L ${headX + 16} ${headY - 50} L ${headX + 2} ${headY - 14} Z`} fill={ear} />
-        <path d={`M ${headX - 19} ${headY - 14} L ${headX - 14} ${headY - 38} L ${headX - 5} ${headY - 15} Z`} fill={inner} />
+        <polygon points={`${headX - 18},${headY - 12} ${headX - 10},${headY - 40} ${headX + 2},${headY - 16}`} fill={ear} />
+        <polygon points={`${headX - 15},${headY - 14} ${headX - 10},${headY - 34} ${headX},${headY - 17}`} fill="#f472b6" />
+        <polygon points={`${headX + 8},${headY - 14} ${headX + 20},${headY - 40} ${headX + 26},${headY - 12}`} fill={ear} />
+        <polygon points={`${headX + 11},${headY - 15} ${headX + 19},${headY - 34} ${headX + 24},${headY - 14}`} fill="#f472b6" />
       </>
     );
   };
 
   const snoutArt = () => {
-    if (sp === "bird") return <path d={`M ${headX + 18} ${headY - 4} L ${headX + 48} ${headY + 4} L ${headX + 18} ${headY + 12} Z`} fill="#f59e0b" />;
-    if (sp === "pig")
+    if (sp === "bird") {
+      return null; // Bird beak is rendered as the interactive mouth
+    }
+    if (sp === "pig") {
       return (
         <>
-          <ellipse cx={headX + 28} cy={headY + 12} rx={16} ry={12} fill="#f9a8d4" />
-          <circle cx={headX + 22} cy={headY + 11} r={3.2} fill="#9d174d" />
-          <circle cx={headX + 34} cy={headY + 11} r={3.2} fill="#9d174d" />
+          <ellipse cx={headX + 18} cy={headY + 8} rx={11} ry={8} fill="#f472b6" />
+          <circle cx={headX + 15} cy={headY + 8} r={2.5} fill="#9d174d" />
+          <circle cx={headX + 21} cy={headY + 8} r={2.5} fill="#9d174d" />
         </>
       );
-    if (sp === "rabbit") return <ellipse cx={headX + 24} cy={headY + 10} rx={18} ry={8} fill="#f9a8d4" />;
-    if (sp === "fox") return <path d={`M ${headX + 16} ${headY - 4} L ${headX + 50} ${headY + 8} L ${headX + 16} ${headY + 14} Z`} fill={belly} />;
-    if (sp === "panda") return <ellipse cx={headX} cy={headY + 14} rx={15} ry={10} fill="#ffffff" />;
-    // bear / dog / cat / panda
+    }
+    if (sp === "rabbit") {
+      return (
+        <>
+          <ellipse cx={headX + 14} cy={headY + 8} rx={10} ry={7} fill="#ffffff" />
+          <polygon points={`${headX + 17},${headY + 5} ${headX + 23},${headY + 5} ${headX + 20},${headY + 9}`} fill="#f472b6" />
+          <line x1={headX + 16} y1={headY + 7} x2={headX + 34} y2={headY + 5} stroke="rgba(0,0,0,0.25)" strokeWidth={1.5} />
+          <line x1={headX + 16} y1={headY + 9} x2={headX + 34} y2={headY + 11} stroke="rgba(0,0,0,0.25)" strokeWidth={1.5} />
+        </>
+      );
+    }
+    if (sp === "fox") {
+      return (
+        <>
+          <polygon points={`${headX + 8},${headY + 2} ${headX + 34},${headY + 8} ${headX + 8},${headY + 16}`} fill={belly} />
+          <circle cx={headX + 33} cy={headY + 8} r={3.5} fill="#111827" />
+        </>
+      );
+    }
+    if (sp === "panda") {
+      return (
+        <>
+          <ellipse cx={headX + 14} cy={headY + 8} rx={11} ry={8} fill="#ffffff" />
+          <ellipse cx={headX + 20} cy={headY + 5} rx={5} ry={3.5} fill="#111827" />
+        </>
+      );
+    }
+    if (sp === "bear") {
+      return (
+        <>
+          <ellipse cx={headX + 14} cy={headY + 8} rx={13} ry={10} fill={belly} />
+          <ellipse cx={headX + 20} cy={headY + 5} rx={6} ry={4.5} fill="#111827" />
+        </>
+      );
+    }
+    if (sp === "dog") {
+      return (
+        <>
+          <ellipse cx={headX + 14} cy={headY + 8} rx={12} ry={9} fill={belly} />
+          <ellipse cx={headX + 20} cy={headY + 5} rx={5} ry={4} fill="#1f2937" />
+        </>
+      );
+    }
+    // Cat: cute muzzle pad, pink nose, and distinct whiskers
     return (
       <>
-        <ellipse cx={headX + 22} cy={headY + 13} rx={14} ry={10} fill={belly} />
-        <ellipse cx={headX + 26} cy={headY + 8} rx={6.5} ry={5} fill="#1f2937" />
+        <ellipse cx={headX + 14} cy={headY + 8} rx={10} ry={7} fill={belly} opacity={0.9} />
+        <polygon points={`${headX + 17},${headY + 5} ${headX + 23},${headY + 5} ${headX + 20},${headY + 9}`} fill="#f472b6" />
+        {/* Whiskers */}
+        <line x1={headX + 16} y1={headY + 6} x2={headX + 38} y2={headY + 2} stroke="rgba(0,0,0,0.35)" strokeWidth={1.5} />
+        <line x1={headX + 16} y1={headY + 8} x2={headX + 40} y2={headY + 8} stroke="rgba(0,0,0,0.35)" strokeWidth={1.5} />
+        <line x1={headX + 16} y1={headY + 10} x2={headX + 37} y2={headY + 14} stroke="rgba(0,0,0,0.35)" strokeWidth={1.5} />
       </>
     );
   };
 
-  const tailArt = () => {
-    if (sp === "bird") return <path d={`M -60 -50 Q -108 -66 -104 -20 Q -90 -34 -60 -28 Z`} fill={body} />;
-    if (sp === "rabbit") return <circle cx={-72} cy={-44} r={14} fill="#ffffff" />;
-    if (sp === "pig") return <circle cx={-72} cy={-46} r={10} fill="none" stroke={body} strokeWidth={6} />;
-    if (sp === "cat" || sp === "fox") return <path d={`M -70 -52 Q -112 -72 -108 -14 Q -96 -30 -70 -30 Z`} fill={body} />;
-    if (sp === "bear" || sp === "panda") return <circle cx={-72} cy={-44} r={11} fill={body} />;
-    return <path d={`M -72 -46 Q -104 -54 -100 -12 Q -92 -28 -72 -28 Z`} fill={body} />;
-  };
-
-  // quadruped silhouette
-  const legX = [-54, -38, 26, 42];
-  const legY = -30;
-  const legH = 32;
-
   return (
     <>
-      <g ref={rf("tail")}>{tailArt()}</g>
-      <g ref={rf("body")}>
-        <rect x={-76} y={-80} width={152} height={52} rx={24} fill={body} />
-        <ellipse cx={-14} cy={-48} rx={58} ry={18} fill={belly} opacity={0.85} />
-        {sp === "dog" && <path d="M 56 -58 L 80 -76 L 80 -40 Z" fill={body} />}
-        {legX.map((x, i) => (
-          <g key={i} ref={rf(["bLeg", "bLeg2", "fLeg", "fLeg2"][i])}>
-            <rect x={x} y={legY} width={13} height={legH} rx={6} fill={body} />
-          </g>
-        ))}
+      {/* 1. Tail (behind body, pivot at rump) */}
+      <g ref={rf("tail")} transform="translate(-44 -48)">
+        {animalTailArt(sp, body, belly)}
       </g>
+
+      {/* 2. Far legs (behind body, shaded) */}
+      <g ref={rf("bLeg2")} transform="translate(-28 -42)">
+        {animalLegArt(sp, body, true)}
+      </g>
+      <g ref={rf("fLeg2")} transform="translate(32 -42)">
+        {animalLegArt(sp, body, true)}
+      </g>
+
+      {/* 3. Main Torso */}
+      <g ref={rf("body")}>
+        {animalBodyArt(sp, body, belly)}
+      </g>
+
+      {/* 4. Head & Face */}
       <g ref={rf("head")}>
         {earArt()}
         <circle cx={headX} cy={headY} r={headR} fill={body} />
         {snoutArt()}
+
+        {/* Panda eye patches */}
         {sp === "panda" && (
           <>
-            <ellipse cx={headX - 12} cy={headY - 8} rx={9} ry={11} fill="#111827" />
-            <ellipse cx={headX + 12} cy={headY - 8} rx={9} ry={11} fill="#111827" />
+            <ellipse cx={headX - 6} cy={headY - 4} rx={8} ry={10} fill="#111827" transform={`rotate(-15 ${headX - 6} ${headY - 4})`} />
+            <ellipse cx={headX + 12} cy={headY - 4} rx={8} ry={10} fill="#111827" transform={`rotate(15 ${headX + 12} ${headY - 4})`} />
           </>
         )}
-        {sp === "bird" && <path d={`M ${headX - 10} ${headY - 10} Q ${headX} ${headY - 22} ${headX + 10} ${headY - 10}`} fill="none" stroke="#111827" strokeWidth={2.5} strokeLinecap="round" />}
-        <ellipse ref={(el) => { d.eyeL = el; }} cx={headX - 11} cy={headY - 4} rx={8.5} ry={8.5} fill="#ffffff" stroke="#1f2937" strokeWidth={2.5} />
-        <ellipse ref={(el) => { d.eyeR = el; }} cx={headX + 11} cy={headY - 4} rx={8.5} ry={8.5} fill="#ffffff" stroke="#1f2937" strokeWidth={2.5} />
+
+        {/* Eyes */}
+        <ellipse ref={(el) => { d.eyeL = el; }} cx={headX - 6} cy={headY - 4} rx={7} ry={7} fill="#ffffff" stroke="#1f2937" strokeWidth={2} />
+        <ellipse ref={(el) => { d.eyeR = el; }} cx={headX + 12} cy={headY - 4} rx={7} ry={7} fill="#ffffff" stroke="#1f2937" strokeWidth={2} />
+
+        {/* Pupils with highlights */}
         <g ref={(el) => { d.pupilL = el; }}>
-          <circle cx={headX - 11} cy={headY - 4} r={4.5} fill={a.eyes} />
+          <circle cx={headX - 6} cy={headY - 4} r={3.8} fill={a.eyes} />
+          <circle cx={headX - 4.5} cy={headY - 5.5} r={1.5} fill="#ffffff" />
         </g>
         <g ref={(el) => { d.pupilR = el; }}>
-          <circle cx={headX + 11} cy={headY - 4} r={4.5} fill={a.eyes} />
+          <circle cx={headX + 12} cy={headY - 4} r={3.8} fill={a.eyes} />
+          <circle cx={headX + 13.5} cy={headY - 5.5} r={1.5} fill="#ffffff" />
         </g>
+
+        {/* Brows */}
         {sp !== "bird" && (
           <>
             <g ref={(el) => { d.browL = el; }}>
-              <line x1={headX - 21} y1={headY - 13} x2={headX - 1} y2={headY - 13} stroke="#1f2937" strokeWidth={4.5} strokeLinecap="round" />
+              <line x1={headX - 12} y1={headY - 13} x2={headX} y2={headY - 13} stroke="#1f2937" strokeWidth={3} strokeLinecap="round" />
             </g>
             <g ref={(el) => { d.browR = el; }}>
-              <line x1={headX + 1} y1={headY - 13} x2={headX + 21} y2={headY - 13} stroke="#1f2937" strokeWidth={4.5} strokeLinecap="round" />
+              <line x1={headX + 6} y1={headY - 13} x2={headX + 18} y2={headY - 13} stroke="#1f2937" strokeWidth={3} strokeLinecap="round" />
             </g>
           </>
         )}
-        <path ref={(el) => { d.mouth = el; }} d={`M ${headX - 5} ${headY + 22} Q ${headX} ${headY + 25} ${headX + 5} ${headY + 22}`} fill="none" stroke="#3b1d1d" strokeWidth={3} strokeLinecap="round" />
+
+        {/* Mouth / Beak anchored directly to the face */}
+        <path
+          ref={(el) => { d.mouth = el; }}
+          d={
+            sp === "bird"
+              ? `M ${headX + 14} ${headY - 2} L ${headX + 32} ${headY + 5} L ${headX + 14} ${headY + 10} Z`
+              : `M ${headX + 10} ${headY + 16} Q ${headX + 16} ${headY + 19} ${headX + 22} ${headY + 16}`
+          }
+          fill={sp === "bird" ? "#f59e0b" : "none"}
+          stroke={sp === "bird" ? "none" : "#3b1d1d"}
+          strokeWidth={sp === "bird" ? 0 : 2.5}
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* 5. Near legs (in front of body) */}
+      <g ref={rf("bLeg")} transform="translate(-36 -42)">
+        {animalLegArt(sp, body, false)}
+      </g>
+      <g ref={rf("fLeg")} transform="translate(24 -42)">
+        {animalLegArt(sp, body, false)}
       </g>
     </>
   );
@@ -373,22 +612,68 @@ function FigureAnimal({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }
 
 function applyFace(d: FigDom, s: NonNullable<ActorFrame["face"]>) {
   const L = Math.max(s.blinkL, s.blinkR);
-  const ry = String(Math.max(1.2, 12 * (1 - L) * (1 + s.wide * 0.35)));
-  d.eyeL?.setAttribute("ry", ry);
-  d.eyeR?.setAttribute("ry", ry);
-  const look = `translate(${s.lookX * 2.4} ${s.lookY * 2.4})`;
-  d.pupilL?.setAttribute("transform", look);
-  d.pupilR?.setAttribute("transform", look);
-  const tilt = (s.angry * 0.45 - s.frown * 0.3) * 57.3;
-  const lift = -s.browUp * 6;
-  d.browL?.setAttribute("transform", `translate(0 ${lift}) rotate(${tilt} -18 -92)`);
-  d.browR?.setAttribute("transform", `translate(0 ${lift}) rotate(${-tilt} 18 -92)`);
-  const cy = d.species === "bird" ? -38 : -36 - s.smile * 2 + s.frown * 3;
-  const top = cy - 2 + s.smile * 12 - s.frown * 11;
-  const bot = top + s.jaw * 26 + s.wide * 6;
-  d.mouth?.setAttribute("d", `M -12 ${cy} Q 0 ${top} 12 ${cy} Q 0 ${bot} -12 ${cy} Z`);
-  d.mouth?.setAttribute("fill", s.jaw > 0.12 || s.wide > 0.3 ? "#5b1f1f" : "none");
+
+  if (isAnimal(d.species)) {
+    const headX = 46;
+    const headY = -86;
+    const isBird = d.species === "bird";
+
+    // Eyes blink
+    const ry = Math.max(0.8, (isBird ? 6 : 7) * (1 - L) * (1 + s.wide * 0.3));
+    d.eyeL?.setAttribute("ry", String(ry));
+    d.eyeR?.setAttribute("ry", String(ry));
+
+    // Pupils track
+    const lookX = s.lookX * 2.2;
+    const lookY = s.lookY * 2.2;
+    d.pupilL?.setAttribute("transform", `translate(${lookX} ${lookY})`);
+    d.pupilR?.setAttribute("transform", `translate(${lookX} ${lookY})`);
+
+    // Brows
+    const tilt = (s.angry * 0.45 - s.frown * 0.3) * 57.3;
+    const lift = -s.browUp * 5;
+    d.browL?.setAttribute("transform", `translate(0 ${lift}) rotate(${tilt} ${headX - 6} ${headY - 14})`);
+    d.browR?.setAttribute("transform", `translate(0 ${lift}) rotate(${-tilt} ${headX + 12} ${headY - 14})`);
+
+    // Mouth / Beak
+    if (isBird) {
+      const open = s.jaw * 7 + (s.talk ? 4 : 0);
+      d.mouth?.setAttribute("d", `M ${headX + 14} ${headY - 2} L ${headX + 32} ${headY + 5 + open} L ${headX + 14} ${headY + 10} Z`);
+      d.mouth?.setAttribute("fill", "#f59e0b");
+      d.mouth?.setAttribute("stroke", "none");
+    } else {
+      const mx = headX + 16;
+      const my = headY + 16;
+      const cy = my - s.smile * 2 + s.frown * 2;
+      const top = cy + s.smile * 3;
+      const bot = cy + 2 + s.jaw * 10 + s.wide * 4;
+      d.mouth?.setAttribute("d", `M ${mx - 6} ${cy} Q ${mx} ${top} ${mx + 6} ${cy} Q ${mx} ${bot} ${mx - 6} ${cy} Z`);
+      d.mouth?.setAttribute("fill", s.jaw > 0.12 ? "#991b1b" : "none");
+      d.mouth?.setAttribute("stroke", "#3b1d1d");
+      d.mouth?.setAttribute("stroke-width", "2.5");
+    }
+  } else {
+    // Humans and girls
+    const ry = String(Math.max(1.2, 12 * (1 - L) * (1 + s.wide * 0.35)));
+    d.eyeL?.setAttribute("ry", ry);
+    d.eyeR?.setAttribute("ry", ry);
+    const look = `translate(${s.lookX * 2.4} ${s.lookY * 2.4})`;
+    d.pupilL?.setAttribute("transform", look);
+    d.pupilR?.setAttribute("transform", look);
+    const tilt = (s.angry * 0.45 - s.frown * 0.3) * 57.3;
+    const lift = -s.browUp * 6;
+    d.browL?.setAttribute("transform", `translate(0 ${lift}) rotate(${tilt} -18 -92)`);
+    d.browR?.setAttribute("transform", `translate(0 ${lift}) rotate(${-tilt} 18 -92)`);
+    const cy = -36 - s.smile * 2 + s.frown * 3;
+    const top = cy - 2 + s.smile * 12 - s.frown * 11;
+    const bot = top + s.jaw * 26 + s.wide * 6;
+    d.mouth?.setAttribute("d", `M -12 ${cy} Q 0 ${top} 12 ${cy} Q 0 ${bot} -12 ${cy} Z`);
+    d.mouth?.setAttribute("fill", s.jaw > 0.12 || s.wide > 0.3 ? "#5b1f1f" : "none");
+    d.mouth?.setAttribute("stroke", "#3b1d1d");
+    d.mouth?.setAttribute("stroke-width", "4");
+  }
 }
+
 export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: number) {
   if (d.outer) d.outer.setAttribute("transform", `translate(${f.x} ${groundY}) scale(${scale * f.facing} ${scale})`);
 
@@ -397,19 +682,30 @@ export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: nu
     const speed = f.speedMs;
     const ph = g * Math.PI * 2;
     const moving = speed > 0.18;
-    // leg swing: front legs vs back legs (opposite phases)
+    // Leg swing: front legs vs back legs
     const swing = moving ? Math.min(1, speed / 3.6) : 0;
-    const s1 = Math.sin(ph) * 34 * swing;
-    const s2 = Math.sin(ph + Math.PI) * 34 * swing;
-    d.bones.bLeg?.setAttribute("transform", `translate(-48 -28) rotate(${s2})`);
-    d.bones.bLeg2?.setAttribute("transform", `translate(-33 -28) rotate(${s2 * 0.7})`);
-    d.bones.fLeg?.setAttribute("transform", `translate(32 -28) rotate(${s1})`);
-    d.bones.fLeg2?.setAttribute("transform", `translate(47 -28) rotate(${s1 * 0.7})`);
-    // body bob and lean
-    const bob = moving ? Math.abs(Math.sin(ph)) * 5 * swing : Math.sin(f.t * 1.4) * 1.5;
-    d.bones.body?.setAttribute("transform", `translate(0 ${bob - 3}) rotate(${moving ? Math.sin(ph * 2) * 2.5 : 0})`);
-    d.bones.head?.setAttribute("transform", `translate(0 ${moving ? Math.sin(ph + 1.2) * 4 * swing : Math.sin(f.t * 1.4 + 1) * 2.5}) rotate(${Math.sin(f.t * 0.7) * (f.grounded ? 4 : 0)})`);
-    d.bones.tail?.setAttribute("transform", `translate(-78 0) rotate(${Math.sin(f.t * 3.5) * 20 + (moving ? Math.sin(ph) * 16 : 0)})`);
+    const s1 = Math.sin(ph) * 26 * swing;
+    const s2 = Math.sin(ph + Math.PI) * 26 * swing;
+
+    d.bones.bLeg?.setAttribute("transform", `translate(-36 -42) rotate(${s2})`);
+    d.bones.bLeg2?.setAttribute("transform", `translate(-28 -42) rotate(${s2 * 0.85})`);
+    d.bones.fLeg?.setAttribute("transform", `translate(24 -42) rotate(${s1})`);
+    d.bones.fLeg2?.setAttribute("transform", `translate(32 -42) rotate(${s1 * 0.85})`);
+
+    // Body bob and sway
+    const bob = moving ? Math.abs(Math.sin(ph * 2)) * 3 * swing : Math.sin(f.t * 1.5) * 1.2;
+    d.bones.body?.setAttribute("transform", `translate(0 ${bob}) rotate(${moving ? Math.sin(ph) * 2 : 0})`);
+
+    // Head bob with gentle breathing
+    d.bones.head?.setAttribute(
+      "transform",
+      `translate(0 ${bob * 0.6 + (moving ? Math.sin(ph + 1) * 2.5 * swing : Math.sin(f.t * 1.5) * 1.5)}) rotate(${Math.sin(f.t * 0.8) * 3})`,
+    );
+
+    // Tail wag: attached directly to rump at (-44, -48)
+    const wag = Math.sin(f.t * 4.5) * 18 + (moving ? Math.sin(ph) * 16 : 0);
+    d.bones.tail?.setAttribute("transform", `translate(-44 -48) rotate(${wag})`);
+
     applyFace(d, f.face);
   } else {
     // humans and girls: bone-driven
@@ -425,7 +721,7 @@ export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: nu
   }
 
   if (d.bubble && d.bubbleText && d.bubbleRect) {
-    const top = d.species === "bird" || isAnimal(d.species) ? -230 : HEAD_TOP + (d.species === "girl" ? 6 : 0);
+    const top = d.species === "bird" || isAnimal(d.species) ? -180 : HEAD_TOP + (d.species === "girl" ? 6 : 0);
     if (f.bubble) {
       const w = Math.min(560, 48 + f.bubble.length * 13);
       d.bubble.setAttribute("display", "inline");
