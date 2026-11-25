@@ -280,6 +280,8 @@ function outfitTorsoArt(a: Appearance, torsoCol: string, accentCol: string) {
         <>
           <path d="M -36 -124 Q 0 -105 36 -124 Q 24 -96 0 -92 Q -24 -96 -36 -124 Z" fill={accentCol} />
           <circle cx={0} cy={-92} r={6} fill="#facc15" stroke="#b45309" strokeWidth={1} />
+          <path d={`M ${-44 * a.build} -16 L ${44 * a.build} -16 L ${40 * a.build} -3 L ${-40 * a.build} -3 Z`} fill={accentCol} />
+          <ellipse cx={0} cy={-10} rx={7} ry={5} fill="#facc15" stroke="#b45309" strokeWidth={1} />
         </>
       );
     case 3: // Cute Frock & Pleated Skirt
@@ -356,42 +358,63 @@ function outfitTorsoArt(a: Appearance, torsoCol: string, accentCol: string) {
   }
 }
 
-function outfitHipsArt(a: Appearance, dressCol: string, accentCol: string) {
+function outfitHipsArt(a: Appearance, dressCol: string, accentCol: string, preview = false) {
   const outfit = a.outfit ?? (a.dress ? 1 : 0);
   switch (outfit) {
-    case 1: // Classic Dress
-      return <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${66 * a.build} 82 L ${-66 * a.build} 82 Z`} fill={dressCol} />;
-    case 2: // Royal Gown / Evening Dress
+    case 1: { // Classic Dress
+      const h = preview ? 46 : 82;
+      const w = (preview ? 56 : 66) * a.build;
+      return <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${w} ${h} Q 0 ${h + 8} ${-w} ${h} Z`} fill={dressCol} />;
+    }
+    case 2: { // Royal Gown / Evening Dress
+      const w = (preview ? 64 : 88) * a.build;
+      const h = preview ? 60 : 152;
+      const midY = preview ? 22 : 68;
+      const ctrlW = (preview ? 54 : 74) * a.build;
       return (
         <>
-          <path d={`M ${-44 * a.build} -16 L ${44 * a.build} -16 C ${62 * a.build} 20 ${88 * a.build} 80 ${94 * a.build} 140 L ${-94 * a.build} 140 C ${-88 * a.build} 80 ${-62 * a.build} 20 ${-44 * a.build} -16 Z`} fill={dressCol} />
-          <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${34 * a.build} -4 L ${-34 * a.build} -4 Z`} fill={accentCol} />
+          <path
+            d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 C ${ctrlW} ${midY} ${w} ${h - 24} ${w} ${h} Q ${w * 0.5} ${h + 10} 0 ${h + 4} Q ${-w * 0.5} ${h + 10} ${-w} ${h} C ${-w} ${h - 24} ${-ctrlW} ${midY} ${-42 * a.build} -16 Z`}
+            fill={dressCol}
+          />
+          <path d={`M ${-18 * a.build} 6 Q ${-28 * a.build} ${h * 0.55} ${-36 * a.build} ${h + 3}`} stroke="rgba(0,0,0,0.14)" strokeWidth={3} fill="none" strokeLinecap="round" />
+          <path d={`M ${18 * a.build} 6 Q ${28 * a.build} ${h * 0.55} ${36 * a.build} ${h + 3}`} stroke="rgba(0,0,0,0.14)" strokeWidth={3} fill="none" strokeLinecap="round" />
+          <path d={`M 0 8 L 0 ${h + 2}`} stroke="rgba(255,255,255,0.2)" strokeWidth={3} fill="none" strokeLinecap="round" />
         </>
       );
-    case 3: // Cute Frock & Pleated Skirt
+    }
+    case 3: { // Cute Frock & Pleated Skirt
+      const h = preview ? 38 : 60;
+      const w = (preview ? 54 : 60) * a.build;
       return (
         <>
-          <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${60 * a.build} 58 L ${-60 * a.build} 58 Z`} fill={dressCol} />
-          <line x1={-20} y1={-16} x2={-30} y2={58} stroke={accentCol} strokeWidth={2} />
-          <line x1={0} y1={-16} x2={0} y2={58} stroke={accentCol} strokeWidth={2} />
-          <line x1={20} y1={-16} x2={30} y2={58} stroke={accentCol} strokeWidth={2} />
+          <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${w} ${h} Q 0 ${h + 6} ${-w} ${h} Z`} fill={dressCol} />
+          <line x1={-20} y1={-16} x2={-28} y2={h} stroke={accentCol} strokeWidth={2} />
+          <line x1={0} y1={-16} x2={0} y2={h + 2} stroke={accentCol} strokeWidth={2} />
+          <line x1={20} y1={-16} x2={28} y2={h} stroke={accentCol} strokeWidth={2} />
         </>
       );
-    case 6: // Kimono / Robe
+    }
+    case 6: { // Kimono / Robe
+      const h = preview ? 54 : 132;
+      const w = (preview ? 44 : 46) * a.build;
       return (
         <>
-          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${46 * a.build} 128 L ${-46 * a.build} 128 Z`} fill={dressCol} />
-          <rect x={-42 * a.build} y={-16} width={84 * a.build} height={32} fill={accentCol} rx={3} />
+          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${w} ${h} L ${-w} ${h} Z`} fill={dressCol} />
+          <rect x={-42 * a.build} y={-16} width={84 * a.build} height={preview ? 22 : 32} fill={accentCol} rx={3} />
         </>
       );
-    case 7: // Kurta / Tunic
+    }
+    case 7: { // Kurta / Tunic
+      const h = preview ? 34 : 52;
       return (
         <>
           <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={16} fill={a.pants} />
-          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${44 * a.build} 52 L ${-44 * a.build} 52 Z`} fill={dressCol} />
-          <line x1={0} y1={10} x2={0} y2={52} stroke="rgba(0,0,0,0.2)" strokeWidth={2} />
+          <path d={`M ${-42 * a.build} -16 L ${42 * a.build} -16 L ${44 * a.build} ${h} L ${-44 * a.build} ${h} Z`} fill={dressCol} />
+          <line x1={0} y1={10} x2={0} y2={h} stroke="rgba(0,0,0,0.2)" strokeWidth={2} />
         </>
       );
+    }
     default:
       if (a.bottomCut === 1) { // Shorts
         return <rect x={-40 * a.build} y={-16} width={80 * a.build} height={28} rx={12} fill={a.pants} />;
@@ -406,7 +429,9 @@ function outfitHipsArt(a: Appearance, dressCol: string, accentCol: string) {
         );
       }
       if (a.bottomCut === 3) { // Skirt
-        return <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${60 * a.build} 58 L ${-60 * a.build} 58 Z`} fill={a.pants} />;
+        const h = preview ? 38 : 58;
+        const w = (preview ? 54 : 60) * a.build;
+        return <path d={`M ${-40 * a.build} -16 L ${40 * a.build} -16 L ${w} ${h} L ${-w} ${h} Z`} fill={a.pants} />;
       }
       return <rect x={-40 * a.build} y={-16} width={80 * a.build} height={34} rx={16} fill={a.pants} />;
   }
@@ -457,22 +482,24 @@ function limbArm(p: "l" | "r", a: Appearance, rf: RefFn, heldProp?: number, held
 function FigureHuman({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }) {
   const a = actor.app;
   const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
-  const dressCol = a.dressImage ? `url(#pat-${actor.id})` : (a.outfitColor || a.dressColor || a.shirt);
+  const baseDressCol = a.outfitColor || a.dressColor || a.shirt;
+  const dressCol = a.dressImage ? `url(#pat-${actor.id})` : baseDressCol;
   const accentCol = a.accentColor || "#facc15";
   const torsoCol = a.dressImage ? `url(#pat-${actor.id})` : (isDress ? dressCol : a.shirt);
   return (
     <>
       {a.dressImage && (
         <defs>
-          <pattern id={`pat-${actor.id}`} patternUnits="userSpaceOnUse" width={160} height={240} x={-80} y={-128}>
-            <image href={a.dressImage} x={-80} y={-128} width={160} height={240} preserveAspectRatio="xMidYMid slice" />
+          <pattern id={`pat-${actor.id}`} patternUnits="userSpaceOnUse" width={160} height={285} x={-80} y={-128}>
+            <rect x={0} y={0} width={160} height={285} fill={baseDressCol} />
+            <image href={a.dressImage} x={0} y={0} width={160} height={285} preserveAspectRatio="xMidYMid slice" />
           </pattern>
         </defs>
       )}
       <g ref={rf("hips")}>
-        {outfitHipsArt(a, dressCol, accentCol)}
         {limbLeg("l", a, rf)}
         {limbLeg("r", a, rf)}
+        {outfitHipsArt(a, dressCol, accentCol, false)}
         <g ref={rf("spine")}>
           <rect x={-48 * a.build} y={-128} width={96 * a.build} height={136} rx={34} fill={torsoCol} />
           {outfitTorsoArt(a, torsoCol, accentCol)}
@@ -1122,6 +1149,8 @@ export function CharacterPreviewSVG({
   heldProp?: number;
   className?: string;
 }) {
+  const prevPatId = useRef(`prev-pat-${Math.random().toString(36).slice(2, 7)}`).current;
+
   if (species !== "human" && species !== "girl") {
     return (
       <div className={`flex flex-col items-center justify-center rounded-lg bg-black/40 p-2 ${className}`}>
@@ -1131,9 +1160,9 @@ export function CharacterPreviewSVG({
     );
   }
 
-  const prevPatId = useRef(`prev-pat-${Math.random().toString(36).slice(2, 7)}`).current;
   const isDress = [1, 2, 3, 6].includes(a.outfit ?? (a.dress ? 1 : 0));
-  const dressCol = a.dressImage ? `url(#${prevPatId})` : (a.outfitColor || a.dressColor || a.shirt);
+  const baseDressCol = a.outfitColor || a.dressColor || a.shirt;
+  const dressCol = a.dressImage ? `url(#${prevPatId})` : baseDressCol;
   const accentCol = a.accentColor || "#facc15";
   const torsoCol = a.dressImage ? `url(#${prevPatId})` : (isDress ? dressCol : a.shirt);
 
@@ -1141,8 +1170,9 @@ export function CharacterPreviewSVG({
     <svg viewBox="-80 -185 160 270" className={`overflow-visible rounded-lg bg-black/40 ${className}`}>
       {a.dressImage && (
         <defs>
-          <pattern id={prevPatId} patternUnits="userSpaceOnUse" width={160} height={240} x={-80} y={-128}>
-            <image href={a.dressImage} x={-80} y={-128} width={160} height={240} preserveAspectRatio="xMidYMid slice" />
+          <pattern id={prevPatId} patternUnits="userSpaceOnUse" width={140} height={186} x={-70} y={-118}>
+            <rect x={0} y={0} width={140} height={186} fill={baseDressCol} />
+            <image href={a.dressImage} x={0} y={0} width={140} height={186} preserveAspectRatio="xMidYMid slice" />
           </pattern>
         </defs>
       )}
@@ -1161,7 +1191,7 @@ export function CharacterPreviewSVG({
       </g>
 
       {/* Hips / Skirt / Dress bottom */}
-      <g>{outfitHipsArt(a, dressCol, accentCol)}</g>
+      <g>{outfitHipsArt(a, dressCol, accentCol, true)}</g>
 
       {/* Torso */}
       <g>

@@ -1,6 +1,6 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Copy, ImagePlus, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
+import { Copy, ImagePlus, Paintbrush, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
 import { useStudio2d, type Tab2D, DEFAULT_DRAFT } from "./store2d";
 import type { Appearance, Species } from "./types2d";
 import {
@@ -18,6 +18,7 @@ import { Field, NumberInput, Section, Select, Slider, Toggle, Swatches, ColorInp
 import { cn } from "../utils/cn";
 import MiniFigure from "./MiniFigure";
 import { CharacterPreviewSVG } from "./rig2d";
+import { DressDrawModal } from "./DressDrawModal";
 
 /* ---------------------------------------------------------------- */
 /* Left panel                                                       */
@@ -59,6 +60,74 @@ export function Studio2DLeft() {
 }
 
 /* Characters ------------------------------------------------------ */
+
+function CustomDressControl({ app, onPatch }: { app: Appearance; onPatch: (p: Partial<Appearance>) => void }) {
+  const [drawOpen, setDrawOpen] = useState(false);
+  return (
+    <Field label="🎨 Custom Dress / Draw or Upload">
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[10px] text-slate-400">
+          Draw your own dress from scratch or upload a fabric image:
+        </div>
+        <button
+          onClick={() => setDrawOpen(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-gradient-to-r from-[#e87d0d] to-amber-500 px-2.5 py-1.5 text-[11px] font-bold text-black shadow hover:brightness-110"
+        >
+          <Paintbrush className="h-3.5 w-3.5" />
+          <span>{app.dressImage ? "✏️ Edit / Draw Dress" : "🎨 Draw Dress from Scratch"}</span>
+        </button>
+        <div className="flex items-center gap-2">
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-[#e87d0d]/50 bg-[#e87d0d]/10 px-2 py-1 text-[10px] font-semibold text-[#ffb36b] hover:bg-[#e87d0d]/20">
+            <ImagePlus className="h-3 w-3" />
+            <span>{app.dressImage ? "Upload Different Image" : "Upload Dress Image / Pattern"}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  const res = ev.target?.result as string;
+                  if (res) onPatch({ dressImage: res });
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
+          {app.dressImage && (
+            <button
+              onClick={() => onPatch({ dressImage: undefined })}
+              className="rounded border border-red-500/40 bg-red-500/20 px-2 py-1 text-[10px] font-bold text-red-300 hover:bg-red-500/30"
+              title="Clear custom dress"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {app.dressImage && (
+          <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 p-1.5">
+            <img src={app.dressImage} alt="Custom dress preview" className="h-9 w-7 rounded border border-white/20 object-cover" />
+            <span className="text-[10px] font-medium text-emerald-400">✓ Custom dress active</span>
+          </div>
+        )}
+      </div>
+      {drawOpen && (
+        <DressDrawModal
+          initialImage={app.dressImage}
+          baseColor={app.outfitColor || app.dressColor || app.shirt}
+          outfitStyle={app.outfit ?? (app.dress ? 1 : 0)}
+          onApply={(dataUrl) => {
+            onPatch({ dressImage: dataUrl });
+            setDrawOpen(false);
+          }}
+          onClose={() => setDrawOpen(false)}
+        />
+      )}
+    </Field>
+  );
+}
 
 function CustomCharacterDesigner({ onDone }: { onDone: () => void }) {
   const addActor = useStudio2d((s) => s.addActor);
@@ -169,49 +238,7 @@ function CustomCharacterDesigner({ onDone }: { onDone: () => void }) {
                 />
               </Field>
 
-              <Field label="🎨 Custom Dress / Fabric Pattern">
-                <div className="flex flex-col gap-1.5">
-                  <div className="text-[10px] text-slate-400">
-                    Upload any drawing, pattern, or fabric photo to wrap onto the clothing:
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-[#e87d0d]/60 bg-[#e87d0d]/10 px-2 py-1.5 text-[11px] font-semibold text-[#ffb36b] hover:bg-[#e87d0d]/20">
-                      <ImagePlus className="h-3.5 w-3.5" />
-                      <span>{app.dressImage ? "Change Dress Drawing" : "Upload Dress Drawing / Pattern"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const res = ev.target?.result as string;
-                            if (res) set({ dressImage: res });
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                    </label>
-                    {app.dressImage && (
-                      <button
-                        onClick={() => set({ dressImage: undefined })}
-                        className="rounded border border-red-500/40 bg-red-500/20 px-2 py-1.5 text-[10px] font-bold text-red-300 hover:bg-red-500/30"
-                        title="Clear uploaded dress pattern"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  {app.dressImage && (
-                    <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 p-1.5">
-                      <img src={app.dressImage} alt="Dress pattern preview" className="h-8 w-8 rounded object-cover border border-white/20" />
-                      <span className="text-[10px] text-emerald-400 font-medium">✓ Custom fabric active</span>
-                    </div>
-                  )}
-                </div>
-              </Field>
+              <CustomDressControl app={app} onPatch={set} />
 
               <Field label="Primary Outfit / Dress Colour">
                 <div className="flex items-center gap-2">
@@ -885,49 +912,7 @@ function ActorEditor({ id }: { id: string }) {
             />
           </Field>
 
-          <Field label="🎨 Custom Dress / Fabric Pattern">
-            <div className="flex flex-col gap-1.5">
-              <div className="text-[10px] text-slate-400">
-                Upload any drawing, pattern, or fabric photo to wrap onto the clothing:
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-[#e87d0d]/60 bg-[#e87d0d]/10 px-2 py-1.5 text-[11px] font-semibold text-[#ffb36b] hover:bg-[#e87d0d]/20">
-                  <ImagePlus className="h-3.5 w-3.5" />
-                  <span>{a.dressImage ? "Change Dress Drawing" : "Upload Dress Drawing / Pattern"}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        const res = ev.target?.result as string;
-                        if (res) set({ dressImage: res });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-                {a.dressImage && (
-                  <button
-                    onClick={() => set({ dressImage: undefined })}
-                    className="rounded border border-red-500/40 bg-red-500/20 px-2 py-1.5 text-[10px] font-bold text-red-300 hover:bg-red-500/30"
-                    title="Clear uploaded dress pattern"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              {a.dressImage && (
-                <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 p-1.5">
-                  <img src={a.dressImage} alt="Dress pattern preview" className="h-8 w-8 rounded object-cover border border-white/20" />
-                  <span className="text-[10px] text-emerald-400 font-medium">✓ Custom fabric active</span>
-                </div>
-              )}
-            </div>
-          </Field>
+          <CustomDressControl app={a} onPatch={set} />
 
           <Field label="Primary Outfit / Dress Colour">
             <div className="flex items-center gap-2">
