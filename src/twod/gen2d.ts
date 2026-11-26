@@ -60,8 +60,9 @@ export const OBJECT_FAMILIES = [
   "Mountain", "Castle", "Tent", "Sofa", "Bed", "TV", "Plant pot", "Gift", "Key", "Pizza",
   "Burger", "Ice cream", "Bike", "Boat", "Plane", "Rocket", "Train", "Traffic light", "Bin", "Fence",
   "Bridge", "Windmill", "Snowman", "Pumpkin", "Rainbow", "Lightning", "Snowflake", "Butterfly", "Bee", "Snail",
+  "Burj Khalifa", "Eiffel Tower", "Statue of Liberty", "Blue Whale",
 ];
-export const GROUND_FAMILIES = new Set([0, 1, 2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 23, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58]);
+export const GROUND_FAMILIES = new Set([0, 1, 2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 23, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 61, 62, 63]);
 
 export const OBJECT_PALETTES: [string, string, string][] = [
   ["#22c55e", "#7a4b22", "#fde047"],

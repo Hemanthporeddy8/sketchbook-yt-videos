@@ -43,6 +43,10 @@ export interface Actor2D {
   autoRemove?: boolean;
   heldProp?: number; // family index of held object (-1 or undefined for none)
   heldHand?: "r" | "l";
+  statTitle?: string; // comparison label (e.g. "Human / Average")
+  statHeight?: string; // comparison height (e.g. "1.75 m / 5'9\"")
+  statSub?: string; // extra stat subtitle (e.g. "Baseline scale")
+  showStat?: boolean;
 }
 
 export interface Obj2D {
@@ -58,6 +62,25 @@ export interface Obj2D {
   rotation: number;
   flip: boolean;
   driverId?: string; // actorId of driver sitting in car
+  statTitle?: string; // comparison label (e.g. "Burj Khalifa")
+  statHeight?: string; // comparison height (e.g. "828 m / 2,717 ft")
+  statSub?: string; // extra stat subtitle (e.g. "103× taller than house")
+  showStat?: boolean;
+}
+
+export type CamShot = "wide" | "close" | "medium" | "low" | "tower" | "follow" | "custom";
+
+export interface CameraClip2D {
+  id: string;
+  start: number;
+  duration: number;
+  shot: CamShot;
+  targetId?: string; // actorId or objectId to follow/focus
+  panX?: number; // center x (when no target or custom offset)
+  panY?: number; // center y
+  zoom?: number; // 0.3 to 3.0 (default 1.0)
+  smooth?: boolean; // smooth glide transition from previous camera
+  label?: string;
 }
 
 export interface Clip2D {

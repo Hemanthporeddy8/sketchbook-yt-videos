@@ -1,8 +1,8 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Copy, ImagePlus, Mic, Paintbrush, Play, Search, Trash2, Users, Palette, Sparkles, Wand2, X } from "lucide-react";
+import { Copy, ImagePlus, Mic, Paintbrush, Play, Search, Trash2, Users, Palette, Sparkles, Wand2, X, Video } from "lucide-react";
 import { useStudio2d, type Tab2D, DEFAULT_DRAFT } from "./store2d";
-import type { Appearance, Species, AudioClip2D } from "./types2d";
+import type { Appearance, Species, AudioClip2D, CameraClip2D, CamShot } from "./types2d";
 import {
   EXPRESSION_OPTIONS, ANIMAL_EXPRESSION_OPTIONS, GESTURE_OPTIONS, OBJECT_FAMILIES, OBJECT_PALETTES, OBJECT_VARIANTS,
   SCENE_KINDS, SCENE_PALETTES, DEFAULT_SCENE_PALETTE, SKIN_TONES, HAIR_COLORS, HAIR_STYLES, CLOTH, SHOE_COLORS, EYE_COLORS, BUILDS, HATS,
@@ -834,6 +834,7 @@ export function Inspector2D() {
   const obj = useStudio2d((s) => (s.selected?.kind === "object" ? s.objects.find((o) => o.id === s.selected?.id) : undefined));
   const clip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.clips.find((c) => c.id === s.selected?.id) : undefined));
   const audioClip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.audioClips.find((c) => c.id === s.selected?.id) : undefined));
+  const cameraClip = useStudio2d((s) => (s.selected?.kind === "clip" ? s.cameraClips.find((c) => c.id === s.selected?.id) : undefined));
   const removeSelected = useStudio2d((s) => s.removeSelected);
   const addActor = useStudio2d((s) => s.addActor);
   const patchSceneClip = useStudio2d((s) => s.patchSceneClip);
@@ -879,6 +880,7 @@ export function Inspector2D() {
         {actor && <ActorEditor id={actor.id} />}
         {obj && <ObjectEditor id={obj.id} />}
         {clip && <ClipEditor id={clip.id} />}
+        {cameraClip && <CameraClipEditor id={cameraClip.id} />}
         {audioClip && <AudioClipEditor id={audioClip.id} />}
       </div>
     </aside>
@@ -1136,6 +1138,45 @@ function ActorEditor({ id }: { id: string }) {
       <Field label="Layer">
         <Select value={actor.depth} onChange={(v) => patchActor(id, { depth: v })} options={[{ value: 0, label: "Background (behind objects)" }, { value: 1, label: "Middle" }, { value: 2, label: "Foreground" }]} />
       </Field>
+      <div className="space-y-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-2.5">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+          📊 Scale Comparison Callout Badge
+        </div>
+        <Toggle
+          label="Show Comparison Card & Height Ruler"
+          checked={!!actor.showStat}
+          onChange={(v) => patchActor(id, { showStat: v })}
+        />
+        {actor.showStat && (
+          <>
+            <Field label="Comparison Title / Subject">
+              <input
+                value={actor.statTitle ?? actor.name}
+                onChange={(e) => patchActor(id, { statTitle: e.target.value })}
+                placeholder="e.g. Human / Average"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-100 outline-none focus:border-amber-400"
+              />
+            </Field>
+            <Field label="Height Measurement">
+              <input
+                value={actor.statHeight ?? "1.75 m (5'9\")"}
+                onChange={(e) => patchActor(id, { statHeight: e.target.value })}
+                placeholder="e.g. 1.75 m (5'9&quot;)"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-amber-300 font-mono outline-none focus:border-amber-400"
+              />
+            </Field>
+            <Field label="Subtitle / Comparison Ratio">
+              <input
+                value={actor.statSub ?? ""}
+                onChange={(e) => patchActor(id, { statSub: e.target.value })}
+                placeholder="e.g. Baseline scale"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-amber-400"
+              />
+            </Field>
+          </>
+        )}
+      </div>
+
       <Toggle label="Away: remove when the character finishes its purpose" checked={!!actor.autoRemove} onChange={(v) => patchActor(id, { autoRemove: v })} />
       <button onClick={removeSelected} className="flex w-full items-center justify-center gap-1 rounded-md bg-red-500/15 py-1.5 text-[11px] text-red-300 hover:bg-red-500/25">
         <Trash2 className="h-3 w-3" /> Remove character
@@ -1176,6 +1217,61 @@ function ObjectEditor({ id }: { id: string }) {
           />
         </Field>
       )}
+      <div className="space-y-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-2.5">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+          📊 Scale Comparison Callout Badge
+        </div>
+        <Toggle
+          label="Show Comparison Card & Height Ruler"
+          checked={!!obj.showStat}
+          onChange={(v) => patchObject(id, { showStat: v })}
+        />
+        {obj.showStat && (
+          <>
+            <Field label="Comparison Title / Landmark">
+              <input
+                value={obj.statTitle ?? obj.name}
+                onChange={(e) => patchObject(id, { statTitle: e.target.value })}
+                placeholder="e.g. Burj Khalifa"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-100 outline-none focus:border-amber-400"
+              />
+            </Field>
+            <Field label="Height Measurement">
+              <input
+                value={
+                  obj.statHeight ??
+                  (obj.family === 60
+                    ? "828 m / 2,717 ft"
+                    : obj.family === 61
+                      ? "330 m / 1,083 ft"
+                      : obj.family === 62
+                        ? "93 m / 305 ft"
+                        : obj.family === 63
+                          ? "30 m / 98 ft"
+                          : obj.family === 10
+                            ? "8 m / 26 ft"
+                            : "10 m")
+                }
+                onChange={(e) => patchObject(id, { statHeight: e.target.value })}
+                placeholder="e.g. 828 m / 2,717 ft"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-amber-300 font-mono outline-none focus:border-amber-400"
+              />
+            </Field>
+            <Field label="Subtitle / Comparison Ratio">
+              <input
+                value={
+                  obj.statSub ??
+                  (obj.family === 60 ? "103× taller than a house" : "")
+                }
+                onChange={(e) => patchObject(id, { statSub: e.target.value })}
+                placeholder="e.g. 103× taller than house"
+                className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-amber-400"
+              />
+            </Field>
+          </>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-1.5">
         <button onClick={() => addObject({ ...obj, id: undefined, name: obj.name, x: obj.x + 60, y: obj.y })} className="flex items-center justify-center gap-1 rounded-md bg-white/5 py-1.5 text-[11px] text-slate-200 hover:bg-white/10">
           <Copy className="h-3 w-3" /> Duplicate
@@ -1368,6 +1464,100 @@ function AudioClipEditor({ id }: { id: string }) {
         className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-500/20 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors"
       >
         <Trash2 className="h-3.5 w-3.5" /> Delete Dub Voice Take
+      </button>
+    </Section>
+  );
+}
+
+function CameraClipEditor({ id }: { id: string }) {
+  const cameraClip = useStudio2d((s) => s.cameraClips.find((c) => c.id === id));
+  const actors = useStudio2d((s) => s.actors);
+  const objects = useStudio2d((s) => s.objects);
+  const patchCameraClip = useStudio2d((s) => s.patchCameraClip);
+  const removeCameraClip = useStudio2d((s) => s.removeCameraClip);
+  const removeSelected = useStudio2d((s) => s.removeSelected);
+
+  if (!cameraClip) return null;
+  const p = (patch: Partial<CameraClip2D>) => patchCameraClip(id, patch);
+
+  const shotOptions: { value: CamShot; label: string }[] = [
+    { value: "medium", label: "🎬 Medium Shot (Balanced Framing)" },
+    { value: "close", label: "🔍 Close Up (Face / Detail Focus)" },
+    { value: "wide", label: "🌐 Wide Angle (Full Environment)" },
+    { value: "tower", label: "🏙️ Tower / Sky Pan (Tilt from Ground to Top)" },
+    { value: "low", label: "📐 Low Angle (Worm's Eye View)" },
+    { value: "follow", label: "🏃 Track & Follow (Follows Movement)" },
+    { value: "custom", label: "⚙️ Custom Position & Pan" },
+  ];
+
+  const targetOptions = [
+    { value: "", label: "🎯 (No specific target / Stage Center)" },
+    ...actors.map((a) => ({ value: a.id, label: `👤 Character: ${a.name} (${a.species})` })),
+    ...objects.map((o) => ({ value: o.id, label: `📦 Object: ${o.name} (#${o.family})` })),
+  ];
+
+  return (
+    <Section title="🎥 Camera Shot & Transition">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Start (s)">
+          <NumberInput value={cameraClip.start} min={0} step={0.1} onChange={(v) => p({ start: Math.max(0, v) })} />
+        </Field>
+        <Field label="Length (s)">
+          <NumberInput value={cameraClip.duration} min={0.2} step={0.1} onChange={(v) => p({ duration: Math.max(0.2, v) })} />
+        </Field>
+      </div>
+
+      <Field label="Framing & Angle Preset">
+        <Select
+          value={cameraClip.shot}
+          onChange={(v) => p({ shot: v as CamShot })}
+          options={shotOptions}
+        />
+      </Field>
+
+      <Field label="Focus Target (Character or Object)">
+        <Select
+          value={cameraClip.targetId ?? ""}
+          onChange={(v) => p({ targetId: v || undefined })}
+          options={targetOptions}
+        />
+      </Field>
+
+      <Slider
+        label="Camera Zoom"
+        value={cameraClip.zoom ?? 1}
+        min={0.3}
+        max={3.0}
+        step={0.05}
+        onChange={(v) => p({ zoom: v })}
+        format={(v) => `${v.toFixed(2)}×`}
+      />
+
+      <Toggle
+        label="Cinematic Smooth Glide (Ease from previous camera)"
+        checked={cameraClip.smooth !== false}
+        onChange={(v) => p({ smooth: v })}
+      />
+
+      {cameraClip.shot === "custom" && (
+        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+          <Field label="Pan X (px)">
+            <NumberInput value={Math.round(cameraClip.panX ?? 640)} step={10} onChange={(v) => p({ panX: v })} />
+          </Field>
+          <Field label="Pan Y (px)">
+            <NumberInput value={Math.round(cameraClip.panY ?? 360)} step={10} onChange={(v) => p({ panY: v })} />
+          </Field>
+        </div>
+      )}
+
+      <button
+        onClick={() => {
+          removeCameraClip(id);
+          removeSelected();
+        }}
+        className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-500/15 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/25 transition-colors"
+      >
+        <Trash2 className="h-3.5 w-3.5" /> Delete Camera Shot
       </button>
     </Section>
   );

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { uid } from "../lib/util";
 import { appearanceFromIndex } from "./gen2d";
 import { dimsOf, groundOf } from "./anim2d";
-import type { Actor2D, Appearance, Aspect2D, AudioClip2D, Clip2D, Obj2D, Preview2D, Scene2D, SceneClip2D, Species } from "./types2d";
+import type { Actor2D, Appearance, Aspect2D, AudioClip2D, CameraClip2D, Clip2D, Obj2D, Preview2D, Scene2D, SceneClip2D, Species } from "./types2d";
 
 /* State for the 2D studio. Kept separate from the Film and Sandbox stores. */
 
@@ -87,7 +87,8 @@ function starter() {
     { id: uid(), start: 6, duration: 12, kind: 8, palette: 8 },
   ];
   const audioClips: AudioClip2D[] = [];
-  return { actors, clips, objects, scene: { kind: 0, palette: 0 } as Scene2D, sceneClips, audioClips, liveMocapActorId: null as string | null };
+  const cameraClips: CameraClip2D[] = [];
+  return { actors, clips, objects, scene: { kind: 0, palette: 0 } as Scene2D, sceneClips, audioClips, cameraClips, showRulerGrid: false, liveMocapActorId: null as string | null };
 }
 
 interface State2D {
@@ -96,6 +97,8 @@ interface State2D {
   clips: Clip2D[];
   sceneClips: SceneClip2D[];
   audioClips: AudioClip2D[];
+  cameraClips: CameraClip2D[];
+  showRulerGrid: boolean;
   liveMocapActorId: string | null;
   preview: Preview2D | null;
   scene: Scene2D;
@@ -116,6 +119,10 @@ interface State2D {
   addAudioClip: (c: Partial<AudioClip2D> & { actorId: string; start: number; duration: number; audioUrl: string }) => string;
   patchAudioClip: (id: string, p: Partial<AudioClip2D>) => void;
   removeAudioClip: (id: string) => void;
+  addCameraClip: (c: Partial<CameraClip2D> & { start: number; duration: number }) => string;
+  patchCameraClip: (id: string, p: Partial<CameraClip2D>) => void;
+  removeCameraClip: (id: string) => void;
+  setShowRulerGrid: (v: boolean | ((prev: boolean) => boolean)) => void;
   setLiveMocapActorId: (id: string | null) => void;
   setPreview: (p: Preview2D | null) => void;
   addCrowd: () => void;
@@ -230,6 +237,14 @@ export const useStudio2d = create<State2D>()(
       },
       patchAudioClip: (id, p) => set((s) => ({ audioClips: s.audioClips.map((c) => (c.id === id ? { ...c, ...p } : c)) })),
       removeAudioClip: (id) => set((s) => ({ audioClips: s.audioClips.filter((c) => c.id !== id) })),
+      addCameraClip: (c) => {
+        const clip: CameraClip2D = { id: uid(), shot: "medium", panX: 640, panY: 360, zoom: 1.2, smooth: true, ...c };
+        set((s) => ({ cameraClips: [...s.cameraClips, clip], selected: { kind: "clip", id: clip.id } }));
+        return clip.id;
+      },
+      patchCameraClip: (id, p) => set((s) => ({ cameraClips: s.cameraClips.map((c) => (c.id === id ? { ...c, ...p } : c)) })),
+      removeCameraClip: (id) => set((s) => ({ cameraClips: s.cameraClips.filter((c) => c.id !== id) })),
+      setShowRulerGrid: (v) => set((s) => ({ showRulerGrid: typeof v === "function" ? v(s.showRulerGrid) : v })),
       setLiveMocapActorId: (id) => set({ liveMocapActorId: id }),
       setPreview: (p) => set({ preview: p }),
       removeActorById: (id) =>
@@ -247,6 +262,7 @@ export const useStudio2d = create<State2D>()(
           if (sel.kind === "object") return { objects: s.objects.filter((o) => o.id !== sel.id), selected: null };
           if (s.sceneClips.some((c) => c.id === sel.id)) return { sceneClips: s.sceneClips.filter((c) => c.id !== sel.id), selected: null };
           if (s.audioClips.some((c) => c.id === sel.id)) return { audioClips: s.audioClips.filter((c) => c.id !== sel.id), selected: null };
+          if (s.cameraClips.some((c) => c.id === sel.id)) return { cameraClips: s.cameraClips.filter((c) => c.id !== sel.id), selected: null };
           return { clips: s.clips.filter((c) => c.id !== sel.id), selected: null };
         }),
       select: (sel) => set({ selected: sel }),
@@ -270,6 +286,8 @@ export const useStudio2d = create<State2D>()(
         clips: s.clips,
         sceneClips: s.sceneClips,
         audioClips: s.audioClips,
+        cameraClips: s.cameraClips,
+        showRulerGrid: s.showRulerGrid,
         scene: s.scene,
         aspect: s.aspect,
         draft: s.draft,

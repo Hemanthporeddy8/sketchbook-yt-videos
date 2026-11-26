@@ -598,6 +598,133 @@ function art(f: number, a: string, b: string, c: string, wheelAngle = 0): ReactN
           <line x1={-30} y1={-30} x2={-30} y2={-76} stroke={a} strokeWidth={6} />
         </>
       );
+    case 60: // Burj Khalifa (Megatall Skyscraper)
+      return (
+        <g>
+          {/* Foundation & podium */}
+          <polygon points="-80,0 -80,-30 80,-30 80,0" fill="#334155" />
+          <polygon points="-65,-30 -60,-80 60,-80 65,-30" fill="#475569" />
+          {/* Tier 1 setback */}
+          <polygon points="-55,-80 -48,-160 48,-160 55,-80" fill={a} />
+          <polygon points="-48,-160 0,-160 0,-80 -55,-80" fill="#0284c7" opacity={0.3} />
+          {[-40, -20, 0, 20, 40].map((lx) => (
+            <line key={lx} x1={lx} y1={-80} x2={lx * 0.85} y2={-160} stroke="#e0f2fe" strokeWidth={1.5} opacity={0.7} />
+          ))}
+          {/* Tier 2 setback */}
+          <polygon points="-44,-160 -36,-240 36,-240 44,-160" fill={a} />
+          <polygon points="0,-160 36,-240 0,-240" fill="#38bdf8" opacity={0.25} />
+          {[-30, -10, 10, 30].map((lx) => (
+            <line key={lx} x1={lx} y1={-160} x2={lx * 0.8} y2={-240} stroke="#ffffff" strokeWidth={1.2} opacity={0.8} />
+          ))}
+          {/* Tier 3 setback */}
+          <polygon points="-32,-240 -24,-330 24,-330 32,-240" fill={a} />
+          <polygon points="-24,-330 0,-330 0,-240 -32,-240" fill="#0369a1" opacity={0.35} />
+          {[-20, 0, 20].map((lx) => (
+            <line key={lx} x1={lx} y1={-240} x2={lx * 0.75} y2={-330} stroke="#bae6fd" strokeWidth={1} opacity={0.75} />
+          ))}
+          {/* Tier 4 upper tower */}
+          <polygon points="-20,-330 -12,-410 12,-410 20,-330" fill={a} />
+          <line x1={0} y1={-330} x2={0} y2={-410} stroke="#ffffff" strokeWidth={2} opacity={0.9} />
+          {/* Pinnacles and massive spire */}
+          <polygon points="-10,-410 -5,-470 5,-470 10,-410" fill="#94a3b8" />
+          <polygon points="-4,-470 -1.5,-530 1.5,-530 4,-470" fill="#cbd5e1" />
+          <line x1={0} y1={-530} x2={0} y2={-570} stroke="#f8fafc" strokeWidth={2.5} />
+          {/* Aircraft warning beacon light */}
+          <circle cx={0} cy={-570} r={4} fill="#ef4444" />
+          <circle cx={0} cy={-570} r={8} fill="#ef4444" opacity={0.4} />
+        </g>
+      );
+    case 61: // Eiffel Tower
+      return (
+        <g>
+          {/* 4 Iron legs & base arch */}
+          <path d="M -80 0 L -60 -90 L -30 -90 L -50 0 Z" fill={b} />
+          <path d="M 80 0 L 60 -90 L 30 -90 L 50 0 Z" fill={b} />
+          <path d="M -48 -20 Q 0 -95 48 -20" stroke={b} strokeWidth={8} fill="none" />
+          {/* First platform */}
+          <rect x={-64} y={-96} width={128} height={10} rx={2} fill={a} />
+          <rect x={-58} y={-102} width={116} height={6} fill="#1e293b" opacity={0.6} />
+          {/* Middle tower */}
+          <polygon points="-46,-102 -26,-200 26,-200 46,-102" fill={b} />
+          <line x1={-42} y1={-104} x2={22} y2={-198} stroke="#0f172a" strokeWidth={2.5} opacity={0.7} />
+          <line x1={42} y1={-104} x2={-22} y2={-198} stroke="#0f172a" strokeWidth={2.5} opacity={0.7} />
+          <line x1={-36} y1={-150} x2={36} y2={-150} stroke={a} strokeWidth={3} />
+          {/* Second platform */}
+          <rect x={-32} y={-206} width={64} height={8} rx={2} fill={a} />
+          {/* Upper tower */}
+          <polygon points="-22,-206 -8,-320 8,-320 22,-206" fill={b} />
+          <line x1={-16} y1={-208} x2={7} y2={-318} stroke="#0f172a" strokeWidth={2} opacity={0.7} />
+          <line x1={16} y1={-208} x2={-7} y2={-318} stroke="#0f172a" strokeWidth={2} opacity={0.7} />
+          {/* Cupola & radio spire */}
+          <rect x={-12} y={-326} width={24} height={7} rx={2} fill={a} />
+          <ellipse cx={0} cy={-330} rx={8} ry={5} fill={b} />
+          <line x1={0} y1={-334} x2={0} y2={-370} stroke="#f8fafc" strokeWidth={2.5} />
+          <circle cx={0} cy={-370} r={3} fill="#eab308" />
+        </g>
+      );
+    case 62: // Statue of Liberty
+      return (
+        <g>
+          {/* Stone Pedestal */}
+          <polygon points="-50,0 -45,-30 45,-30 50,0" fill="#64748b" />
+          <rect x={-36} y={-70} width={72} height={40} fill="#94a3b8" />
+          <rect x={-40} y={-76} width={80} height={8} fill="#cbd5e1" />
+          <rect x={-32} y={-100} width={64} height={26} fill="#94a3b8" />
+          <rect x={-36} y={-106} width={72} height={8} fill="#cbd5e1" />
+          {/* Draped Teal Robe */}
+          <path d="M -24 -106 L -20 -200 Q 0 -220 20 -200 L 26 -106 Z" fill="#14b8a6" />
+          <path d="M -16 -120 Q -5 -160 -12 -195" stroke="#0f766e" strokeWidth={3} fill="none" />
+          <path d="M 12 -120 Q 5 -160 10 -195" stroke="#0f766e" strokeWidth={3} fill="none" />
+          <path d="M -4 -110 L 0 -190" stroke="#0f766e" strokeWidth={2.5} fill="none" />
+          {/* Left arm holding tablet */}
+          <path d="M -18 -190 L -30 -160 L -22 -155" stroke="#14b8a6" strokeWidth={8} strokeLinecap="round" fill="none" />
+          <rect x={-36} y={-165} width={12} height={16} rx={1} fill="#f8fafc" stroke="#64748b" strokeWidth={1} />
+          {/* Crown & radiate spikes */}
+          <ellipse cx={0} cy={-215} rx={10} ry={13} fill="#2dd4bf" />
+          {[-45, -30, -15, 0, 15, 30, 45].map((ang) => {
+            const rad = (ang * Math.PI) / 180;
+            const x1 = Math.sin(rad) * 11;
+            const y1 = -220 - Math.cos(rad) * 11;
+            const x2 = Math.sin(rad) * 22;
+            const y2 = -220 - Math.cos(rad) * 22;
+            return <line key={ang} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#14b8a6" strokeWidth={2.5} />;
+          })}
+          {/* Right arm holding torch flame */}
+          <path d="M 16 -190 L 32 -240 L 34 -255" stroke="#14b8a6" strokeWidth={7} strokeLinecap="round" fill="none" />
+          <polygon points="30,-255 38,-255 35,-262 33,-262" fill="#0f766e" />
+          <path d="M 34 -262 Q 28 -272 34 -282 Q 40 -272 34 -262 Z" fill="#f59e0b" />
+          <circle cx={34} cy={-270} r={4} fill="#fef08a" />
+        </g>
+      );
+    case 63: // Blue Whale
+      return (
+        <g>
+          {/* Streamlined leviathan whale body */}
+          <path
+            d="M -120 -60 Q -90 -110 0 -95 Q 80 -80 130 -40 Q 150 -10 130 0 Q 70 15 -10 10 Q -70 5 -110 -25 Q -130 -40 -120 -60 Z"
+            fill="#1e3a8a"
+          />
+          {/* Underside ventral throat pleats */}
+          <path d="M -70 0 Q 0 12 70 0 Q 100 -5 125 -15" stroke="#93c5fd" strokeWidth={3} fill="none" opacity={0.8} />
+          {[-40, -15, 10, 35, 60, 85].map((px) => (
+            <line key={px} x1={px} y1={-8} x2={px + 12} y2={-2} stroke="#bfdbfe" strokeWidth={1.8} opacity={0.65} />
+          ))}
+          <circle cx={110} cy={-28} r={3.5} fill="#020617" />
+          <circle cx={111} cy={-29} r={1.2} fill="#ffffff" />
+          <path d="M 90 -22 Q 115 -18 128 -30" stroke="#0f172a" strokeWidth={2} fill="none" />
+          {/* Pectoral flipper fin */}
+          <path d="M 30 -10 Q 40 25 15 35 Q 20 15 25 -5" fill="#1e40af" stroke="#172554" strokeWidth={1.5} />
+          {/* Dorsal fin */}
+          <path d="M -60 -95 L -75 -115 L -80 -95 Z" fill="#172554" />
+          {/* Massive horizontal tail fluke */}
+          <path d="M -120 -60 Q -145 -70 -165 -90 Q -155 -60 -130 -50 Q -155 -40 -165 -15 Q -145 -35 -120 -45 Z" fill="#1e3a8a" />
+          {/* Water spout / Blowhole spray */}
+          <path d="M 25 -92 Q 22 -135 10 -150" stroke="#67e8f9" strokeWidth={3} fill="none" strokeDasharray="4 3" opacity={0.85} />
+          <path d="M 27 -92 Q 35 -135 48 -148" stroke="#67e8f9" strokeWidth={3} fill="none" strokeDasharray="4 3" opacity={0.85} />
+          <circle cx={10} cy={-152} r={3} fill="#a5f3fc" />
+          <circle cx={48} cy={-150} r={3.5} fill="#a5f3fc" />
+        </g>
+      );
     default:
       return <circle cx={0} cy={-40} r={40} fill={a} />;
   }

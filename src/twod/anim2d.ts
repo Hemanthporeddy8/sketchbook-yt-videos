@@ -1,6 +1,6 @@
 import { locoPose } from "../sandbox/locomotion";
 import { EXPRESSIONS, NEUTRAL_FACE, type FaceState } from "../three/rigs";
-import type { Actor2D, Aspect2D, Clip2D, Obj2D } from "./types2d";
+import type { Actor2D, Aspect2D, CameraClip2D, Clip2D, Obj2D } from "./types2d";
 
 /*
  * Stateless 2D timeline evaluator. Given a time, it returns where every character is and how it looks.
@@ -256,11 +256,250 @@ export function evalObj(o: Obj2D, clips: Clip2D[], t: number): { x: number; bob:
 }
 
 /** Length of the whole project in seconds (at least 6 s, plus a little tail). */
-export function projectDuration(clips: Clip2D[], audioClips?: { start: number; duration: number }[]) {
+export function projectDuration(
+  clips: Clip2D[],
+  audioClips?: { start: number; duration: number }[],
+  cameraClips?: { start: number; duration: number }[],
+) {
   let end = 6;
   for (const c of clips) end = Math.max(end, c.start + c.duration);
   if (audioClips) {
     for (const a of audioClips) end = Math.max(end, a.start + a.duration);
   }
+  if (cameraClips) {
+    for (const cm of cameraClips) end = Math.max(end, cm.start + cm.duration);
+  }
   return end + 0.5;
+}
+
+export interface CamFrame {
+  vx: number;
+  vy: number;
+  vw: number;
+  vh: number;
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
+/**
+ * Dynamic 2D camera evaluator. Computes viewport (vx, vy, vw, vh) based on
+ * camera clips, targets (characters or objects), shot framing presets,
+ * and cinematic glide transitions between shots.
+ */
+export function evalCamera(
+  cameraClips: CameraClip2D[],
+  actors: Actor2D[],
+  objects: Obj2D[],
+  t: number,
+  aspect: Aspect2D,
+  allClips: Clip2D[] = [],
+): CamFrame {
+  const [W, H] = dimsOf(aspect);
+  const gy = groundOf(aspect);
+  const defPanX = W / 2;
+  const defPanY = H / 2;
+  const defZoom = 1.0;
+
+  if (!cameraClips || cameraClips.length === 0) {
+    return {
+      vx: 0,
+      vy: 0,
+      vw: W,
+      vh: H,
+      zoom: 1,
+      panX: defPanX,
+      panY: defPanY,
+    };
+  }
+
+  const sorted = [...cameraClips].sort((a, b) => a.start - b.start);
+
+  const getPoseForClip = (c: CameraClip2D, time: number) => {
+    let px = c.panX ?? defPanX;
+    let py = c.panY ?? defPanY;
+    let zm = c.zoom ?? 1;
+
+    if (c.targetId) {
+      const act = actors.find((a) => a.id === c.targetId);
+      if (act) {
+        const actClips = sortedClips(allClips, act.id);
+        const f = evalActor(act, actClips, time);
+        px = f.x + (c.panX !== undefined ? c.panX - defPanX : 0);
+        const groundY = gy + (act.y ?? 0);
+        const sc = act.scale || 1;
+
+        switch (c.shot) {
+          case "close":
+            py = groundY - 260 * sc;
+            zm = c.zoom ?? 1.8;
+            break;
+          case "medium":
+            py = groundY - 150 * sc;
+            zm = c.zoom ?? 1.35;
+            break;
+          case "low":
+            py = groundY - 50 * sc;
+            zm = c.zoom ?? 1.25;
+            break;
+          case "wide":
+            py = groundY - 140 * sc;
+            zm = c.zoom ?? 0.85;
+            break;
+          case "tower": {
+            const rel = c.duration > 0 ? clamp01((time - c.start) / c.duration) : 0;
+            const startPy = groundY - 80;
+            const endPy = groundY - 440;
+            py = startPy + (endPy - startPy) * smooth(rel);
+            zm = c.zoom ?? 0.8;
+            break;
+          }
+          case "follow":
+          default:
+            py = groundY - 150 * sc;
+            zm = c.zoom ?? 1.2;
+            break;
+        }
+      } else {
+        const obj = objects.find((o) => o.id === c.targetId);
+        if (obj) {
+          const driveClips = allClips.filter((cl) => cl.actorId === obj.id && cl.kind === "drive");
+          const f = evalObj(obj, driveClips, time);
+          px = f.x + (c.panX !== undefined ? c.panX - defPanX : 0);
+          const objY = obj.y - f.bob;
+          const sc = obj.scale || 1;
+
+          switch (c.shot) {
+            case "close":
+              py = objY - 90 * sc;
+              zm = c.zoom ?? 1.7;
+              break;
+            case "medium":
+              py = objY - 130 * sc;
+              zm = c.zoom ?? 1.25;
+              break;
+            case "low":
+              py = objY;
+              zm = c.zoom ?? 1.2;
+              break;
+            case "wide":
+              py = objY - 120 * sc;
+              zm = c.zoom ?? 0.8;
+              break;
+            case "tower": {
+              // Tilt/pan up tall tower like Burj Khalifa or Eiffel Tower!
+              const rel = c.duration > 0 ? clamp01((time - c.start) / c.duration) : 0;
+              const startPy = objY - 60;
+              const endPy = objY - 450 * Math.max(1, sc);
+              py = startPy + (endPy - startPy) * smooth(rel);
+              zm = c.zoom ?? 0.65;
+              break;
+            }
+            case "follow":
+            default:
+              py = objY - 80 * sc;
+              zm = c.zoom ?? 1.15;
+              break;
+          }
+        }
+      }
+    } else {
+      if (c.shot === "close") zm = c.zoom ?? 1.7;
+      else if (c.shot === "medium") zm = c.zoom ?? 1.3;
+      else if (c.shot === "wide") zm = c.zoom ?? 0.8;
+      else if (c.shot === "low") {
+        py = H * 0.72;
+        zm = c.zoom ?? 1.25;
+      } else if (c.shot === "tower") {
+        const rel = c.duration > 0 ? clamp01((time - c.start) / c.duration) : 0;
+        py = H * 0.75 - (H * 0.45) * smooth(rel);
+        zm = c.zoom ?? 0.75;
+      }
+    }
+
+    return { panX: px, panY: py, zoom: Math.max(0.3, Math.min(3.5, zm)) };
+  };
+
+  // Find active clip
+  const activeIdx = sorted.findIndex((c) => t >= c.start && t < c.start + c.duration);
+  let panX = defPanX;
+  let panY = defPanY;
+  let zoom = defZoom;
+
+  if (activeIdx >= 0) {
+    const cur = sorted[activeIdx];
+    const curPose = getPoseForClip(cur, t);
+
+    // If smooth transition is requested (default true)
+    if (cur.smooth !== false) {
+      const transDur = Math.min(1.2, cur.duration * 0.45);
+      if (t - cur.start < transDur && transDur > 0) {
+        const prevClip = activeIdx > 0 ? sorted[activeIdx - 1] : null;
+        const prevPose = prevClip
+          ? getPoseForClip(prevClip, cur.start)
+          : { panX: defPanX, panY: defPanY, zoom: defZoom };
+        const factor = smooth(clamp01((t - cur.start) / transDur));
+        panX = prevPose.panX + (curPose.panX - prevPose.panX) * factor;
+        panY = prevPose.panY + (curPose.panY - prevPose.panY) * factor;
+        zoom = prevPose.zoom + (curPose.zoom - prevPose.zoom) * factor;
+      } else {
+        panX = curPose.panX;
+        panY = curPose.panY;
+        zoom = curPose.zoom;
+      }
+    } else {
+      panX = curPose.panX;
+      panY = curPose.panY;
+      zoom = curPose.zoom;
+    }
+  } else {
+    // Check if before all clips or between clips or after all clips
+    const prevClips = sorted.filter((c) => c.start + c.duration <= t);
+    const nextClips = sorted.filter((c) => c.start > t);
+    const prevClip = prevClips[prevClips.length - 1];
+    const nextClip = nextClips[0];
+
+    if (prevClip && nextClip) {
+      // Transition between prev and next across the gap
+      const gapStart = prevClip.start + prevClip.duration;
+      const gapDur = nextClip.start - gapStart;
+      const prevPose = getPoseForClip(prevClip, gapStart);
+      const nextPose = getPoseForClip(nextClip, nextClip.start);
+      if (gapDur > 0) {
+        const factor = smooth(clamp01((t - gapStart) / gapDur));
+        panX = prevPose.panX + (nextPose.panX - prevPose.panX) * factor;
+        panY = prevPose.panY + (nextPose.panY - prevPose.panY) * factor;
+        zoom = prevPose.zoom + (nextPose.zoom - prevPose.zoom) * factor;
+      } else {
+        panX = nextPose.panX;
+        panY = nextPose.panY;
+        zoom = nextPose.zoom;
+      }
+    } else if (prevClip) {
+      const lastPose = getPoseForClip(prevClip, prevClip.start + prevClip.duration);
+      panX = lastPose.panX;
+      panY = lastPose.panY;
+      zoom = lastPose.zoom;
+    } else if (nextClip) {
+      const firstPose = getPoseForClip(nextClip, nextClip.start);
+      // Ease into first shot if close
+      if (nextClip.start - t < 1.0) {
+        const factor = smooth(clamp01(1.0 - (nextClip.start - t)));
+        panX = defPanX + (firstPose.panX - defPanX) * factor;
+        panY = defPanY + (firstPose.panY - defPanY) * factor;
+        zoom = defZoom + (firstPose.zoom - defZoom) * factor;
+      } else {
+        panX = defPanX;
+        panY = defPanY;
+        zoom = defZoom;
+      }
+    }
+  }
+
+  const vw = W / zoom;
+  const vh = H / zoom;
+  const vx = panX - vw / 2;
+  const vy = panY - vh / 2;
+
+  return { vx, vy, vw, vh, zoom, panX, panY };
 }

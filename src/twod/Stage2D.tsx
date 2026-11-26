@@ -6,7 +6,7 @@ const objRefs = new Map<string, SVGGElement>();
 import { Figure2D, applyFigure, figRegistry } from "./rig2d";
 import { BackgroundArt, ObjectArt } from "./art2d";
 import { OBJECT_PALETTES } from "./gen2d";
-import { clock2d, dimsOf, evalActor, evalObj, groundOf, projectDuration, sceneAt, sortedClips } from "./anim2d";
+import { clock2d, dimsOf, evalActor, evalCamera, evalObj, groundOf, projectDuration, sceneAt, sortedClips } from "./anim2d";
 import { setStageSvg } from "./recorder2d";
 import { fitAspect } from "../three/SceneView";
 import type { Obj2D } from "./types2d";
@@ -14,6 +14,104 @@ import { liveMocap2D } from "./mocap2d";
 import { voiceEngine } from "./voiceEngine";
 
 type Drag = { kind: "actor" | "object"; id: string; dx: number; dy: number };
+
+function ComparisonBadge({
+  x,
+  y,
+  title,
+  height,
+  sub,
+  groundY,
+  itemTopY,
+}: {
+  x: number;
+  y: number;
+  title: string;
+  height?: string;
+  sub?: string;
+  groundY: number;
+  itemTopY: number;
+}) {
+  const badgeW = Math.max(160, Math.min(260, title.length * 9.5 + 40));
+  const badgeH = sub ? 56 : 42;
+  const bx = x - badgeW / 2;
+  const by = y - badgeH - 12;
+
+  return (
+    <g pointerEvents="none" className="select-none">
+      {/* Vertical height measurement bracket / arrow line */}
+      <line
+        x1={x + badgeW / 2 + 10}
+        y1={itemTopY}
+        x2={x + badgeW / 2 + 10}
+        y2={groundY}
+        stroke="#f59e0b"
+        strokeWidth={2}
+        strokeDasharray="4 3"
+        opacity={0.85}
+      />
+      <line x1={x + badgeW / 2 + 4} y1={itemTopY} x2={x + badgeW / 2 + 16} y2={itemTopY} stroke="#f59e0b" strokeWidth={2.5} />
+      <line x1={x + badgeW / 2 + 4} y1={groundY} x2={x + badgeW / 2 + 16} y2={groundY} stroke="#f59e0b" strokeWidth={2.5} />
+
+      {/* Floating dark glass comparison card */}
+      <rect
+        x={bx}
+        y={by}
+        width={badgeW}
+        height={badgeH}
+        rx={7}
+        fill="rgba(15, 23, 42, 0.92)"
+        stroke="#f59e0b"
+        strokeWidth={1.5}
+      />
+      {/* Glowing amber accent dot */}
+      <circle cx={bx + 12} cy={by + 14} r={3.5} fill="#f59e0b" />
+      {/* Item title */}
+      <text
+        x={bx + 22}
+        y={by + 18}
+        fill="#f8fafc"
+        fontSize={10.5}
+        fontWeight={800}
+        fontFamily="Inter, system-ui, sans-serif"
+        letterSpacing="0.04em"
+      >
+        {title.toUpperCase()}
+      </text>
+      {/* Height measurement */}
+      {height && (
+        <text
+          x={bx + 12}
+          y={by + 33}
+          fill="#fbbf24"
+          fontSize={13}
+          fontWeight={900}
+          fontFamily="Inter, system-ui, sans-serif"
+        >
+          {height}
+        </text>
+      )}
+      {/* Comparison ratio / subtitle */}
+      {sub && (
+        <text
+          x={bx + 12}
+          y={by + 47}
+          fill="#94a3b8"
+          fontSize={9}
+          fontWeight={600}
+          fontFamily="Inter, system-ui, sans-serif"
+        >
+          {sub}
+        </text>
+      )}
+      {/* Anchor triangle pointer pointing down */}
+      <polygon
+        points={`${x - 5},${by + badgeH} ${x + 5},${by + badgeH} ${x},${by + badgeH + 6}`}
+        fill="#f59e0b"
+      />
+    </g>
+  );
+}
 
 function ObjectNode({ o, selected, onDown }: { o: Obj2D; selected: boolean; onDown: (e: RPointerEvent<SVGGElement>) => void }) {
   const flip = o.flip ? -1 : 1;
@@ -48,6 +146,9 @@ export function Stage2D() {
   const select = useStudio2d((s) => s.select);
   const patchActor = useStudio2d((s) => s.patchActor);
   const patchObject = useStudio2d((s) => s.patchObject);
+  const cameraClips = useStudio2d((s) => s.cameraClips);
+  const showRulerGrid = useStudio2d((s) => s.showRulerGrid);
+  const setShowRulerGrid = useStudio2d((s) => s.setShowRulerGrid);
 
   const [W, H] = dimsOf(aspect);
   const gy = groundOf(aspect);
@@ -121,7 +222,7 @@ export function Stage2D() {
       const st = useStudio2d.getState();
       if (st.playing) {
         clock2d.t += dt;
-        const dur = projectDuration(st.clips);
+        const dur = projectDuration(st.clips, st.audioClips, st.cameraClips);
         if (clock2d.t >= dur) {
           if (st.loop) clock2d.t = 0;
           else {
@@ -129,6 +230,8 @@ export function Stage2D() {
             st.setPlaying(false);
           }
         }
+      } else {
+        clock2d.t = st.t;
       }
       // remove characters whose clips have all finished (autoRemove)
       const deadActors = st.actors.filter((a) => {
@@ -224,6 +327,12 @@ export function Stage2D() {
       // scene change: last scene clip containing t, else the default scene
       const sc = sceneAt(st.sceneClips, st.scene, clock2d.t);
       setCurScene((prev) => (prev.kind === sc.kind && prev.palette === sc.palette ? prev : sc));
+
+      // Dynamic 60fps camera pan & zoom
+      if (svgRef.current) {
+        const cam = evalCamera(st.cameraClips, st.actors, st.objects, clock2d.t, st.aspect, st.clips);
+        svgRef.current.setAttribute("viewBox", `${cam.vx} ${cam.vy} ${cam.vw} ${cam.vh}`);
+      }
       uiAcc += dt;
       if (uiAcc > 0.1) {
         uiAcc = 0;
@@ -273,6 +382,8 @@ export function Stage2D() {
 
   const { w, h } = fitAspect(box.w - 24, box.h - 24, W / H);
 
+  const initCam = evalCamera(cameraClips, actors, objects, clock2d.t, aspect, useStudio2d.getState().clips);
+
   return (
     <div ref={wrapRef} className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#121417]">
       <div className="relative overflow-hidden shadow-2xl ring-1 ring-black/60" style={{ width: w || "100%", height: h || "100%" }}>
@@ -282,7 +393,7 @@ export function Stage2D() {
               svgRef.current = el;
               setStageSvg(el);
             }}
-            viewBox={`0 0 ${W} ${H}`}
+            viewBox={`${initCam.vx} ${initCam.vy} ${initCam.vw} ${initCam.vh}`}
             width="100%"
             height="100%"
             className="block select-none"
@@ -344,6 +455,98 @@ export function Stage2D() {
                   }}
                 />
               ))}
+
+            {/* Altitude ruler measurement grid for comparison videos */}
+            {showRulerGrid && (
+              <g pointerEvents="none" className="select-none">
+                <line x1={-3000} y1={gy} x2={W + 3000} y2={gy} stroke="#f59e0b" strokeWidth={2.5} />
+                <text x={30} y={gy - 8} fill="#f59e0b" fontSize={12} fontWeight={800} fontFamily="monospace">
+                  0 m · GROUND LEVEL
+                </text>
+                {[
+                  { h: 30, label: "5 m" },
+                  { h: 60, label: "10 m" },
+                  { h: 120, label: "25 m" },
+                  { h: 180, label: "50 m" },
+                  { h: 250, label: "100 m" },
+                  { h: 320, label: "200 m" },
+                  { h: 390, label: "330 m (Eiffel Tower)" },
+                  { h: 460, label: "500 m" },
+                  { h: 540, label: "828 m (Burj Khalifa)" },
+                ].map((r, i) => (
+                  <g key={i}>
+                    <line
+                      x1={-3000}
+                      y1={gy - r.h}
+                      x2={W + 3000}
+                      y2={gy - r.h}
+                      stroke="rgba(245, 158, 11, 0.4)"
+                      strokeWidth={1}
+                      strokeDasharray="6 4"
+                    />
+                    <rect
+                      x={20}
+                      y={gy - r.h - 11}
+                      width={r.label.length * 8.5 + 16}
+                      height={18}
+                      rx={4}
+                      fill="rgba(15, 23, 42, 0.88)"
+                      stroke="#f59e0b"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={28}
+                      y={gy - r.h + 2}
+                      fill="#fbbf24"
+                      fontSize={10.5}
+                      fontWeight={700}
+                      fontFamily="monospace"
+                    >
+                      {r.label}
+                    </text>
+                  </g>
+                ))}
+              </g>
+            )}
+
+            {/* Scale comparison callout badges for actors */}
+            {actors.map((a) => {
+              if (!a.showStat && !a.statTitle && !a.statHeight) return null;
+              const groundY = gy + (a.y ?? 0);
+              const itemTopY = groundY - 330 * (a.scale || 1);
+              return (
+                <ComparisonBadge
+                  key={`stat-act-${a.id}`}
+                  x={a.x}
+                  y={itemTopY}
+                  title={a.statTitle || a.name}
+                  height={a.statHeight}
+                  sub={a.statSub}
+                  groundY={groundY}
+                  itemTopY={itemTopY}
+                />
+              );
+            })}
+
+            {/* Scale comparison callout badges for objects */}
+            {objects.map((o) => {
+              if (!o.showStat && !o.statTitle && !o.statHeight) return null;
+              const estH = o.family === 60 ? 560 : o.family === 61 ? 380 : o.family === 62 ? 280 : 200;
+              const itemTopY = o.y - estH * (o.scale || 1);
+              return (
+                <ComparisonBadge
+                  key={`stat-obj-${o.id}`}
+                  x={o.x}
+                  y={itemTopY}
+                  title={o.statTitle || o.name}
+                  height={o.statHeight}
+                  sub={o.statSub}
+                  groundY={o.y}
+                  itemTopY={itemTopY}
+                />
+              );
+            })}
+
             {showRuler && (
               <g pointerEvents="none">
                 {Array.from({ length: Math.floor(W / 100) + 1 }, (_, i) => i * 100).map((x) => (
@@ -403,8 +606,17 @@ export function Stage2D() {
         </div>
         <div className="absolute right-2 top-2 flex gap-1.5">
           {selPos && <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-emerald-300">{selPos}</span>}
+          <button
+            onClick={() => setShowRulerGrid(!showRulerGrid)}
+            className={`rounded px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1 transition ${
+              showRulerGrid ? "bg-amber-400 text-black font-bold shadow" : "bg-black/60 text-amber-200/80 hover:bg-black/80"
+            }`}
+            title="Toggle Scale Comparison Altitude Grid (0m - 828m)"
+          >
+            📏 Height Ruler {showRulerGrid ? "ON" : "OFF"}
+          </button>
           <button onClick={() => setShowRuler((v) => !v)} className={`rounded px-2 py-0.5 text-[10px] font-semibold ${showRuler ? "bg-[#e87d0d] text-black" : "bg-black/60 text-slate-300"}`} title="Show or hide the position ruler">
-            Ruler
+            XY Ruler
           </button>
           <button onClick={toggleFull} className="flex items-center gap-1 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-slate-200 hover:bg-black/80" title="Fullscreen">
             {full ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}

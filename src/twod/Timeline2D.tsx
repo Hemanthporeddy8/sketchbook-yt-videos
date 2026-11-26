@@ -1,5 +1,5 @@
 import { useEffect, useState, type PointerEvent as RPointerEvent } from "react";
-import { Footprints, Mic, Moon, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
+import { Footprints, Mic, Moon, Pause, Play, Plus, Repeat, SkipBack, Video } from "lucide-react";
 import { useStudio2d } from "./store2d";
 import { SCENE_KINDS } from "./gen2d";
 import { clock2d, projectDuration } from "./anim2d";
@@ -33,12 +33,16 @@ export function Timeline2D() {
   const actors = useStudio2d((s) => s.actors);
   const clips = useStudio2d((s) => s.clips);
   const audioClips = useStudio2d((s) => s.audioClips);
+  const cameraClips = useStudio2d((s) => s.cameraClips);
   const sceneClips = useStudio2d((s) => s.sceneClips);
   const scene = useStudio2d((s) => s.scene);
   const addSceneClip = useStudio2d((s) => s.addSceneClip);
   const patchSceneClip = useStudio2d((s) => s.patchSceneClip);
   const patchAudioClip = useStudio2d((s) => s.patchAudioClip);
   const removeAudioClip = useStudio2d((s) => s.removeAudioClip);
+  const addCameraClip = useStudio2d((s) => s.addCameraClip);
+  const patchCameraClip = useStudio2d((s) => s.patchCameraClip);
+  const removeCameraClip = useStudio2d((s) => s.removeCameraClip);
   const removeSelected = useStudio2d((s) => s.removeSelected);
   const t = useStudio2d((s) => s.t);
   const playing = useStudio2d((s) => s.playing);
@@ -67,7 +71,7 @@ export function Timeline2D() {
     return () => window.removeEventListener("keydown", onKey);
   }, [removeSelected]);
 
-  const dur = projectDuration(clips, audioClips);
+  const dur = projectDuration(clips, audioClips, cameraClips);
   const width = Math.max(dur + 3, 12) * pps;
 
   const setTime = (v: number) => {
@@ -203,6 +207,23 @@ export function Timeline2D() {
             <span className="text-sm leading-none">🎬</span> Scene
           </button>
           <button
+            onClick={() => {
+              const targetId = selected?.kind === "actor" || selected?.kind === "object" ? selected.id : undefined;
+              addCameraClip({
+                start: Math.round(t * 10) / 10,
+                duration: 3,
+                shot: targetId ? "close" : "medium",
+                targetId,
+                zoom: 1.25,
+                smooth: true,
+              });
+            }}
+            className="flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/15 px-2 py-1 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/25"
+            title="Add a camera shot (close, tower, pan, zoom) at the playhead"
+          >
+            <Video className="h-3 w-3 text-amber-300" /> Camera
+          </button>
+          <button
             onClick={() => setDubOpen(true)}
             className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
             title="Open live dubbing studio & webcam face motion capture"
@@ -266,6 +287,68 @@ export function Timeline2D() {
                   />
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Camera track */}
+          <div className="flex h-10 border-b border-black/40">
+            <button
+              onClick={() => select(null)}
+              className="sticky left-0 z-10 flex w-[140px] shrink-0 items-center gap-1.5 border-r border-black/40 bg-[#1f2126] px-2 text-left text-[11px] font-semibold text-amber-300"
+            >
+              🎥 Camera
+            </button>
+            <div
+              className="relative"
+              style={{ width }}
+              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e); }}
+              onPointerMove={(e) => { if (e.buttons === 1) scrub(e); }}
+            >
+              {cameraClips.map((cam) => {
+                const targetName = cam.targetId
+                  ? actors.find((a) => a.id === cam.targetId)?.name || objects.find((o) => o.id === cam.targetId)?.name || "Target"
+                  : "";
+                const shotLabel = cam.shot === "custom" ? "Custom Pan" : `${cam.shot.toUpperCase()} ${targetName ? `(${targetName})` : ""}`;
+                return (
+                  <div
+                    key={cam.id}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      select({ kind: "clip", id: cam.id });
+                      const s0 = cam.start;
+                      beginDrag(e, pps, (dx) => patchCameraClip(cam.id, { start: Math.max(0, Math.round((s0 + dx) * 10) / 10) }));
+                    }}
+                    className={cn(
+                      "absolute top-1 flex h-8 cursor-grab select-none items-center overflow-hidden rounded-md border border-amber-400/60 bg-gradient-to-r from-amber-600/40 to-yellow-600/35 px-2 text-[10px] text-amber-100",
+                      selected?.kind === "clip" && selected.id === cam.id && "ring-2 ring-white",
+                    )}
+                    style={{ left: cam.start * pps, width: Math.max(30, cam.duration * pps) }}
+                    title={`Camera: ${shotLabel} (${cam.start.toFixed(1)}s - ${(cam.start + cam.duration).toFixed(1)}s)`}
+                  >
+                    <span className="truncate font-semibold">🎥 {shotLabel}</span>
+                    <button
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCameraClip(cam.id);
+                        if (selected?.id === cam.id) select(null);
+                      }}
+                      className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded text-amber-300/80 hover:bg-black/50 hover:text-white"
+                      title="Delete camera shot"
+                    >
+                      ✕
+                    </button>
+                    <span
+                      className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize bg-white/30"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        const d0 = cam.duration;
+                        beginDrag(e, pps, (dx) => patchCameraClip(cam.id, { duration: Math.max(0.2, Math.round((d0 + dx) * 10) / 10) }));
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -27,7 +27,7 @@ export function exportStage2D(name: string): string | null {
   if (st.rec === "recording") return "Already recording.";
 
   const [W, H] = dimsOf(st.aspect);
-  const dur = projectDuration(st.clips, st.audioClips);
+  const dur = projectDuration(st.clips, st.audioClips, st.cameraClips);
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
