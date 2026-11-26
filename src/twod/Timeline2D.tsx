@@ -1,4 +1,4 @@
-import { useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useState, type PointerEvent as RPointerEvent } from "react";
 import { Footprints, Mic, Moon, Pause, Play, Plus, Repeat, SkipBack } from "lucide-react";
 import { useStudio2d } from "./store2d";
 import { SCENE_KINDS } from "./gen2d";
