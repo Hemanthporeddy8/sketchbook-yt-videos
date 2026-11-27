@@ -15,10 +15,17 @@ export interface VoiceOptions {
   volume?: number;
 }
 
-let activeUtterance: SpeechSynthesisUtterance | null = null;
-let speakingActive = false;
-let speakingStartTime = 0;
-let estimatedDuration = 2;
+const retainedUtterances = new Set<SpeechSynthesisUtterance>();
+
+// Listen for browser voices list loading (Chromium loads voices asynchronously)
+if (typeof window !== "undefined" && window.speechSynthesis) {
+  try {
+    window.speechSynthesis.onvoiceschanged = () => {
+      // Trigger voice cache warm-up
+      window.speechSynthesis.getVoices();
+    };
+  } catch {}
+}
 
 export function isSpeaking(): boolean {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
@@ -30,7 +37,7 @@ export function stopSpeaking() {
   try {
     window.speechSynthesis.cancel();
   } catch {}
-  activeUtterance = null;
+  retainedUtterances.clear();
   speakingActive = false;
 }
 
@@ -80,7 +87,11 @@ export function speakBrowser(
   const clean = text.trim();
   if (!clean) return null;
 
-  stopSpeaking();
+  // Cancel prior speech & unpause Chromium speech engine
+  try {
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+  } catch {}
 
   const u = new SpeechSynthesisUtterance(clean);
   const voice = getBestVoice(opts.preset, opts.lang);
@@ -126,16 +137,26 @@ export function speakBrowser(
   };
   u.onend = () => {
     speakingActive = false;
-    activeUtterance = null;
+    retainedUtterances.delete(u);
     onEnd?.();
   };
-  u.onerror = () => {
+  u.onerror = (err) => {
+    console.warn("speechSynthesis utterance error:", err);
     speakingActive = false;
-    activeUtterance = null;
+    retainedUtterances.delete(u);
   };
 
-  activeUtterance = u;
+  // Retain in memory to prevent Chromium V8 garbage collection mid-speech
+  retainedUtterances.add(u);
   window.speechSynthesis.speak(u);
+
+  // Resume again if browser queued in paused state
+  if (window.speechSynthesis.paused) {
+    try {
+      window.speechSynthesis.resume();
+    } catch {}
+  }
+
   return u;
 }
 

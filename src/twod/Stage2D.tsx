@@ -217,15 +217,19 @@ export function Stage2D() {
     let raf = 0;
     let last = performance.now();
     let uiAcc = 0;
+    let wasPlaying = false;
+    const spokenClips = new Set<string>();
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const st = useStudio2d.getState();
       if (st.playing) {
+        wasPlaying = true;
         clock2d.t += dt;
         const dur = projectDuration(st.clips, st.audioClips, st.cameraClips);
         if (clock2d.t >= dur) {
           stopSpeaking();
+          spokenClips.clear();
           if (st.loop) clock2d.t = 0;
           else {
             clock2d.t = dur;
@@ -233,7 +237,11 @@ export function Stage2D() {
           }
         }
       } else {
-        stopSpeaking();
+        if (wasPlaying) {
+          stopSpeaking();
+          spokenClips.clear();
+          wasPlaying = false;
+        }
         clock2d.t = st.t;
       }
       // remove characters whose clips have all finished (autoRemove)
@@ -314,7 +322,8 @@ export function Stage2D() {
             (c) => c.actorId === a.id && clock2d.t >= c.start && clock2d.t < c.start + c.duration && c.say && c.say.trim()
           );
           if (speechActionClip && speechActionClip.say) {
-            if (clock2d.t - speechActionClip.start < Math.max(0.08, dt * 1.5) && clock2d.t >= speechActionClip.start) {
+            if (!spokenClips.has(speechActionClip.id)) {
+              spokenClips.add(speechActionClip.id);
               speakBrowser(speechActionClip.say, {
                 preset: a.voicePreset,
                 pitch: a.voicePitch,
