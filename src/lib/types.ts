@@ -41,6 +41,10 @@ export interface SceneCharacter {
   config: CharacterConfig;
   position: [number, number, number];
   rotationY: number;
+  voicePreset?: "female" | "male" | "kid" | "monk" | "robot" | "cartoon";
+  voicePitch?: number;
+  voiceRate?: number;
+  voiceURI?: string;
 }
 
 export interface Clip {
@@ -61,6 +65,7 @@ export interface Clip {
   // face
   expression?: string;
   talk?: boolean;
+  say?: string; // speech bubble dialogue
   footageId?: string;
   label?: string;
 }

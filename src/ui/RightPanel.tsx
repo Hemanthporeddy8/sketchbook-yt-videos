@@ -8,6 +8,7 @@ import { cn } from "../utils/cn";
 import { ColorInput, Field, NumberInput, Section, Select, Slider, Toggle } from "./ui-kit";
 import { MocapPanel } from "./MocapPanel";
 import type { CharacterConfig, Clip, SceneCharacter } from "../lib/types";
+import { getEmotionVoiceTuning, getSystemVoices, speakBrowser } from "../twod/speech2d";
 
 const HATS = [
   { value: 0, label: "None" }, { value: 1, label: "Cap" }, { value: 2, label: "Top hat" }, { value: 3, label: "Crown" },
@@ -195,6 +196,79 @@ function CharacterEditor({ ch }: { ch: SceneCharacter }) {
         <Field label="Eye color"><ColorInput value={c.eyeColor} onChange={(v) => cfg({ eyeColor: v })} /></Field>
       </div>
 
+      <div className="space-y-2 rounded-lg border border-violet-500/30 bg-violet-950/20 p-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
+            🗣️ Character Voice & Accent
+          </span>
+          <button
+            onClick={() => {
+              speakBrowser(`Hello! My name is ${ch.name}.`, {
+                preset: ch.voicePreset ?? (ch.config.rig === "human" ? "female" : "cartoon"),
+                pitch: ch.voicePitch,
+                rate: ch.voiceRate,
+                voiceURI: ch.voiceURI,
+                expression: "happy",
+              });
+            }}
+            className="flex items-center gap-1 rounded bg-violet-600/40 px-2 py-0.5 text-[10px] font-semibold text-violet-200 hover:bg-violet-600/60 transition-colors"
+            title="Test character speech"
+          >
+            🔊 Test Voice
+          </button>
+        </div>
+        <Field label="Voice Model">
+          <Select
+            value={ch.voicePreset ?? (ch.config.rig === "human" ? "female" : "cartoon")}
+            onChange={(v) => patchCharacter(ch.id, { voicePreset: v as any })}
+            options={[
+              { value: "female", label: "👩 Female / Cheerful (Ava)" },
+              { value: "male", label: "👨 Deep Male / Confident (Ben)" },
+              { value: "kid", label: "🧒 Child / High Pitch" },
+              { value: "monk", label: "🧓 Monk / Wise Elder" },
+              { value: "robot", label: "🤖 Robot / Sci-Fi" },
+              { value: "cartoon", label: "🐿️ Cartoon / Squeaky" },
+            ]}
+          />
+        </Field>
+        {typeof window !== "undefined" && getSystemVoices().length > 0 && (
+          <Field label="Specific Voice (Optional)">
+            <select
+              value={ch.voiceURI ?? ""}
+              onChange={(e) => patchCharacter(ch.id, { voiceURI: e.target.value || undefined })}
+              className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-200 outline-none focus:border-violet-400 truncate"
+            >
+              <option value="">(Auto: Best Matching Neural Voice)</option>
+              {getSystemVoices().map((v) => (
+                <option key={v.voiceURI || v.name} value={v.voiceURI || v.name}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Slider
+            label="Pitch"
+            value={ch.voicePitch ?? 1.0}
+            min={0.5}
+            max={2.0}
+            step={0.05}
+            onChange={(v) => patchCharacter(ch.id, { voicePitch: v })}
+            format={(v) => `${v.toFixed(2)}×`}
+          />
+          <Slider
+            label="Speed"
+            value={ch.voiceRate ?? 1.0}
+            min={0.6}
+            max={1.6}
+            step={0.05}
+            onChange={(v) => patchCharacter(ch.id, { voiceRate: v })}
+            format={(v) => `${v.toFixed(2)}×`}
+          />
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-1.5">
         <button
           onClick={() => setMocapTarget(mocapTarget === ch.id ? null : ch.id)}
@@ -341,6 +415,56 @@ function ClipEditor({ clip }: { clip: Clip }) {
           <div className="pt-4">
             <Toggle label="Talking (mouth moves)" checked={!!clip.talk} onChange={(v) => patchClip(clip.id, { talk: v })} />
           </div>
+        </div>
+
+        <div className="space-y-1.5 rounded-lg border border-cyan-500/25 bg-cyan-950/20 p-2.5">
+          <Field label="Speech Bubble / Dialogue">
+            <input
+              value={clip.say ?? ""}
+              onChange={(e) => patchClip(clip.id, { say: e.target.value, talk: true })}
+              placeholder="e.g. Look at that in 3D!"
+              className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[11px] text-slate-100 outline-none focus:border-cyan-400"
+            />
+          </Field>
+          {clip.say?.trim() && (
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex items-center justify-between px-1 text-[10px]">
+                <span className="text-cyan-300/80">Vocal Emotion:</span>
+                <span className="font-semibold text-cyan-300">
+                  {getEmotionVoiceTuning(clip.expression).label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    const char = useStore.getState().characters.find((c) => c.id === clip.characterId);
+                    speakBrowser(clip.say ?? "", {
+                      preset: char?.voicePreset ?? (char?.config.rig === "human" ? "female" : "cartoon"),
+                      pitch: char?.voicePitch,
+                      rate: char?.voiceRate,
+                      lang: "en",
+                      voiceURI: char?.voiceURI,
+                      expression: clip.expression,
+                    });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 rounded bg-white/10 py-1.5 text-[10.5px] font-semibold text-white hover:bg-white/20 transition-colors"
+                  title="Preview emotional speech synthesis in 3D"
+                >
+                  🔊 Preview Voice
+                </button>
+                <button
+                  onClick={() => {
+                    const addCaption = useStore.getState().addCaption;
+                    addCaption(clip.say ?? "", clip.start);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 rounded bg-gradient-to-r from-cyan-600 to-blue-600 py-1.5 text-[10.5px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
+                  title="Add dialogue as 3D subtitles in the scene"
+                >
+                  💬 Add 3D Subtitle
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Section>

@@ -21,6 +21,7 @@ import {
 import { ACTION_MAP, evalMotion, IDLE_ACTION, type PoseParams } from "../lib/motions";
 import { liveRig } from "../mocap/engine";
 import { setPending } from "./runtime";
+import { isSpeaking } from "../twod/speech2d";
 
 const IDLE_PARAMS: PoseParams = { style: "normal", intensity: 1, speed: 1, mirror: false, variant: 0 };
 const tmpA = new THREE.Quaternion();
@@ -37,7 +38,8 @@ function faceFor(expression: string | undefined, talk: boolean | undefined, sec:
   const b = autoBlink(sec);
   base.blinkL = Math.max(base.blinkL, b);
   base.blinkR = Math.max(base.blinkR, b);
-  if (talk) base.jaw = Math.max(base.jaw, (0.5 + 0.5 * Math.sin(sec * 16)) * 0.55);
+  const isTalking = talk || isSpeaking();
+  if (isTalking) base.jaw = Math.max(base.jaw, (0.5 + 0.5 * Math.sin(sec * 18)) * 0.6);
   return base;
 }
 
@@ -165,6 +167,7 @@ export function CharacterModel({ ch, selected, editable }: { ch: SceneCharacter;
   const recording = usePlayback((s) => s.rec === "recording");
   const setSelected = useStore((s) => s.selectChar);
   const patchCharacter = useStore((s) => s.patchCharacter);
+  const gizmo = useStore((s) => s.gizmo);
 
   return (
     <>
@@ -188,12 +191,20 @@ export function CharacterModel({ ch, selected, editable }: { ch: SceneCharacter;
       {selected && editable && (
         <TransformControls
           object={group}
-          mode="translate"
+          mode={gizmo}
           makeDefault
           onMouseUp={() => {
             const g = group.current;
             if (!g) return;
-            patchCharacter(ch.id, { position: [g.position.x, g.position.y, g.position.z] });
+            if (gizmo === "translate") {
+              patchCharacter(ch.id, { position: [g.position.x, g.position.y, g.position.z] });
+            } else if (gizmo === "rotate") {
+              patchCharacter(ch.id, { rotationY: g.rotation.y });
+            } else if (gizmo === "scale") {
+              patchCharacter(ch.id, {
+                config: { ...ch.config, height: Math.max(0.4, Math.min(3.0, g.scale.y)) },
+              });
+            }
           }}
         />
       )}

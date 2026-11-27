@@ -78,6 +78,9 @@ function useFilmShortcuts(active: boolean) {
         st.removeClip(st.selectedClipId);
         return;
       }
+      if (key === "g" && !mod) st.setGizmo("translate");
+      if (key === "r" && !mod) st.setGizmo("rotate");
+      if (key === "s" && !mod) st.setGizmo("scale");
       if (key === "b" && !mod) st.setMode("sandbox");
       if (e.key === "Escape") {
         st.selectChar(null);

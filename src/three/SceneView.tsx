@@ -9,6 +9,7 @@ import { CharacterModel } from "./CharacterModel";
 import { installPointerUp, runtime } from "./runtime";
 import { FootageScreen } from "./FootageScreen";
 import { CaptionLayer } from "./CaptionLayer";
+import { speakBrowser, stopSpeaking } from "../twod/speech2d";
 
 /** Applies camera presets (Wide, Close, Low, Top, Side, Follow). */
 function CameraRig() {
@@ -59,15 +60,25 @@ function CameraRig() {
   return null;
 }
 
+const spoken3DClips = new Set<string>();
+
 /** Advances the timeline clock while playing. */
 function PlaybackDriver() {
   useFrame((_, dt) => {
     const p = usePlayback.getState();
-    if (!p.playing) return;
+    if (!p.playing) {
+      if (spoken3DClips.size > 0) {
+        stopSpeaking();
+        spoken3DClips.clear();
+      }
+      return;
+    }
     const st = useStore.getState();
     const end = sceneEnd(st.clips, st.captions) + (p.rec === "recording" ? 0.6 : 0);
     let t = p.time + Math.min(dt, 0.1);
     if (t >= end) {
+      stopSpeaking();
+      spoken3DClips.clear();
       if (p.loop && p.rec !== "recording") {
         t = 0;
       } else {
@@ -76,6 +87,24 @@ function PlaybackDriver() {
         return;
       }
     }
+
+    // Live 3D speech synthesis for speech bubbles
+    for (const c of st.clips) {
+      if (c.say && c.say.trim() && t >= c.start && t < c.start + c.duration) {
+        if (!spoken3DClips.has(c.id)) {
+          spoken3DClips.add(c.id);
+          const ch = st.characters.find((char) => char.id === c.characterId);
+          speakBrowser(c.say, {
+            preset: ch?.voicePreset,
+            pitch: ch?.voicePitch,
+            rate: ch?.voiceRate,
+            voiceURI: ch?.voiceURI,
+            expression: c.expression,
+          });
+        }
+      }
+    }
+
     usePlayback.setState({ time: t });
   });
   return null;

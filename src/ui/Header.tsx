@@ -42,6 +42,8 @@ export function Header() {
   const projectName = useStore((s) => s.projectName);
   const setProjectName = useStore((s) => s.setProjectName);
   const setCamPreset = useStore((s) => s.setCamPreset);
+  const gizmo = useStore((s) => s.gizmo);
+  const setGizmo = useStore((s) => s.setGizmo);
   const undo = useStore((s) => s.undo);
   const hasHistory = useStore((s) => s.history.length > 0);
   const resetProject = useStore((s) => s.resetProject);
@@ -50,6 +52,8 @@ export function Header() {
 
   const sbPlay = useSandbox((s) => s.play);
   const setSbPlay = useSandbox((s) => s.setPlay);
+  const sbGizmo = useSandbox((s) => s.gizmo);
+  const setSbGizmo = useSandbox((s) => s.setGizmo);
   const sbRec = useSandbox((s) => s.recState);
   const sbRecLabel = useSandbox((s) => s.recLabel);
   const sbUndo = useSandbox((s) => s.undo);
@@ -124,26 +128,60 @@ export function Header() {
       </div>
 
       {isFilm && (
-        <select
-          onChange={(e) => {
-            if (e.target.value) setCamPreset(e.target.value);
-            e.target.value = "";
-          }}
-          defaultValue=""
-          className="rounded-lg border border-white/10 bg-[#11131a] px-2 py-1.5 text-[11px] text-slate-200 outline-none"
-          title="Camera shot presets"
-        >
-          <option value="">📷 Camera shot…</option>
-          {PRESETS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1.5">
+          <select
+            onChange={(e) => {
+              if (e.target.value) setCamPreset(e.target.value);
+              e.target.value = "";
+            }}
+            defaultValue=""
+            className="rounded-lg border border-white/10 bg-[#11131a] px-2 py-1.5 text-[11px] text-slate-200 outline-none"
+            title="Camera shot presets"
+          >
+            <option value="">📷 Camera shot…</option>
+            {PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11131a] p-0.5">
+            <button
+              onClick={() => setGizmo("translate")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                gizmo === "translate" ? "bg-cyan-500 text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Blender Move / Grab (G)"
+            >
+              ✥ Move
+            </button>
+            <button
+              onClick={() => setGizmo("rotate")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                gizmo === "rotate" ? "bg-cyan-500 text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Blender Rotate (R)"
+            >
+              🔄 Rotate
+            </button>
+            <button
+              onClick={() => setGizmo("scale")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                gizmo === "scale" ? "bg-cyan-500 text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Blender Scale (S)"
+            >
+              ⤢ Scale
+            </button>
+          </div>
+        </div>
       )}
 
       {isSb && (
-        <>
+        <div className="flex items-center gap-1.5">
           <select
             onChange={(e) => {
               if (e.target.value) setSbCam(e.target.value);
@@ -160,6 +198,38 @@ export function Header() {
               </option>
             ))}
           </select>
+          <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#11131a] p-0.5">
+            <button
+              onClick={() => setSbGizmo("translate")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                sbGizmo === "translate" ? "bg-[#e87d0d] text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Sandbox Move (G)"
+            >
+              ✥ Move
+            </button>
+            <button
+              onClick={() => setSbGizmo("rotate")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                sbGizmo === "rotate" ? "bg-[#e87d0d] text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Sandbox Rotate (R)"
+            >
+              🔄 Rotate
+            </button>
+            <button
+              onClick={() => setSbGizmo("scale")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition",
+                sbGizmo === "scale" ? "bg-[#e87d0d] text-black shadow" : "text-slate-400 hover:text-white"
+              )}
+              title="Sandbox Scale (S)"
+            >
+              ⤢ Scale
+            </button>
+          </div>
           <button
             onClick={() => setSbPlay(!sbPlay)}
             className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition", sbPlay ? "bg-emerald-400 text-black hover:bg-emerald-300" : "bg-white/10 text-white hover:bg-white/15")}
@@ -168,7 +238,7 @@ export function Header() {
             {sbPlay ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
             {sbPlay ? "Stop play" : "Play"}
           </button>
-        </>
+        </div>
       )}
 
       {is2d && (
