@@ -1176,6 +1176,8 @@ function ActorEditor({ id }: { id: string }) {
             </Field>
           </>
         )}
+      </div>
+
       <div className="space-y-2 rounded-lg border border-violet-500/30 bg-violet-950/20 p-2.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
