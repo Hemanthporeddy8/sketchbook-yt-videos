@@ -18,6 +18,8 @@ export interface VoiceOptions {
 }
 
 const retainedUtterances = new Set<SpeechSynthesisUtterance>();
+let speakingActive = false;
+let speakingStartTime = 0;
 
 // Listen for browser voices list loading (Chromium loads voices asynchronously)
 if (typeof window !== "undefined" && window.speechSynthesis) {
