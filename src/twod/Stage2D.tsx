@@ -329,6 +329,8 @@ export function Stage2D() {
                 pitch: a.voicePitch,
                 rate: a.voiceRate,
                 lang: a.voiceLang,
+                voiceURI: a.voiceURI,
+                expression: speechActionClip.expression,
               });
             }
             if (isSpeaking()) {

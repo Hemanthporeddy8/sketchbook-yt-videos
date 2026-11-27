@@ -51,6 +51,7 @@ export interface Actor2D {
   voicePitch?: number; // 0.5 to 2.0 (default 1.0)
   voiceRate?: number;  // 0.5 to 1.8 (default 1.0)
   voiceLang?: string;  // e.g. "en-US", "en-IN", "en-GB"
+  voiceURI?: string;   // specific browser voice
 }
 
 export type CharacterVoicePreset = "female" | "male" | "kid" | "monk" | "robot" | "cartoon";

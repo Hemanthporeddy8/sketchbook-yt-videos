@@ -19,7 +19,7 @@ import { cn } from "../utils/cn";
 import MiniFigure from "./MiniFigure";
 import { CharacterPreviewSVG } from "./rig2d";
 import { DressDrawModal } from "./DressDrawModal";
-import { generateSpeechAudioTake, speakBrowser } from "./speech2d";
+import { generateSpeechAudioTake, getEmotionVoiceTuning, getSystemVoices, speakBrowser } from "./speech2d";
 
 /* ---------------------------------------------------------------- */
 /* Left panel                                                       */
@@ -1190,6 +1190,8 @@ function ActorEditor({ id }: { id: string }) {
                 pitch: actor.voicePitch,
                 rate: actor.voiceRate,
                 lang: actor.voiceLang,
+                voiceURI: actor.voiceURI,
+                expression: "happy",
               });
             }}
             className="flex items-center gap-1 rounded bg-violet-600/40 px-2 py-0.5 text-[10px] font-semibold text-violet-200 hover:bg-violet-600/60 transition-colors"
@@ -1198,7 +1200,7 @@ function ActorEditor({ id }: { id: string }) {
             🔊 Test Voice
           </button>
         </div>
-        <Field label="Voice Type">
+        <Field label="Voice Model">
           <Select
             value={actor.voicePreset ?? "female"}
             onChange={(v) => patchActor(id, { voicePreset: v as any })}
@@ -1212,6 +1214,22 @@ function ActorEditor({ id }: { id: string }) {
             ]}
           />
         </Field>
+        {typeof window !== "undefined" && getSystemVoices().length > 0 && (
+          <Field label="Specific Voice (Optional)">
+            <select
+              value={actor.voiceURI ?? ""}
+              onChange={(e) => patchActor(id, { voiceURI: e.target.value || undefined })}
+              className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-slate-200 outline-none focus:border-violet-400 truncate"
+            >
+              <option value="">(Auto: Best Matching Neural Voice)</option>
+              {getSystemVoices().map((v) => (
+                <option key={v.voiceURI || v.name} value={v.voiceURI || v.name}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Field label="Pitch">
             <Slider
@@ -1456,32 +1474,42 @@ function ClipEditor({ id }: { id: string }) {
             />
           </Field>
           {clip.say?.trim() && (
-            <div className="flex items-center gap-1.5 pt-0.5">
-              <button
-                onClick={() => {
-                  speakBrowser(clip.say, {
-                    preset: actor?.voicePreset,
-                    pitch: actor?.voicePitch,
-                    rate: actor?.voiceRate,
-                    lang: actor?.voiceLang,
-                  });
-                }}
-                className="flex-1 flex items-center justify-center gap-1 rounded bg-white/10 py-1.5 text-[10.5px] font-semibold text-white hover:bg-white/20 transition-colors"
-                title="Speak text instantly using browser speech synthesis"
-              >
-                🔊 Preview Voice
-              </button>
-              <button
-                onClick={async () => {
-                  if (!actor) return;
-                  const take = await generateSpeechAudioTake(clip.say, actor, clip.start);
-                  addAudioClip(take);
-                }}
-                className="flex-1 flex items-center justify-center gap-1 rounded bg-gradient-to-r from-violet-600 to-indigo-600 py-1.5 text-[10.5px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
-                title="Generate synchronized audio take on timeline for playback and video export"
-              >
-                ⚡ Add to Timeline
-              </button>
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex items-center justify-between px-1 text-[10px]">
+                <span className="text-amber-300/80">Vocal Emotion:</span>
+                <span className="font-semibold text-amber-300">
+                  {getEmotionVoiceTuning(clip.expression).label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    speakBrowser(clip.say, {
+                      preset: actor?.voicePreset,
+                      pitch: actor?.voicePitch,
+                      rate: actor?.voiceRate,
+                      lang: actor?.voiceLang,
+                      voiceURI: actor?.voiceURI,
+                      expression: clip.expression,
+                    });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 rounded bg-white/10 py-1.5 text-[10.5px] font-semibold text-white hover:bg-white/20 transition-colors"
+                  title="Speak text instantly using emotional speech synthesis"
+                >
+                  🔊 Preview Voice
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!actor) return;
+                    const take = await generateSpeechAudioTake(clip.say, actor, clip.start, clip.expression);
+                    addAudioClip(take);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 rounded bg-gradient-to-r from-violet-600 to-indigo-600 py-1.5 text-[10.5px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
+                  title="Generate emotional synchronized audio take on timeline for playback and video export"
+                >
+                  ⚡ Add to Timeline
+                </button>
+              </div>
             </div>
           )}
         </div>

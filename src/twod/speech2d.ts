@@ -13,6 +13,8 @@ export interface VoiceOptions {
   rate?: number;  // 0.5 to 1.8
   lang?: string;
   volume?: number;
+  voiceURI?: string;
+  expression?: string; // "happy", "sad", "angry", "surprised", "laugh", "cry", "evil", "shock", etc.
 }
 
 const retainedUtterances = new Set<SpeechSynthesisUtterance>();
@@ -47,28 +49,92 @@ export function getSystemVoices(): SpeechSynthesisVoice[] {
   return window.speechSynthesis.getVoices();
 }
 
+/** Returns dynamic vocal emotion tuning for a facial expression */
+export function getEmotionVoiceTuning(expression?: string) {
+  const e = (expression || "neutral").toLowerCase();
+  switch (e) {
+    case "happy":
+      return { pitchMult: 1.25, rateMult: 1.15, volumeMult: 1.0, jawMult: 1.1, label: "😄 Happy" };
+    case "laugh":
+      return { pitchMult: 1.38, rateMult: 1.25, volumeMult: 1.0, jawMult: 1.3, label: "😂 Laugh" };
+    case "sad":
+      return { pitchMult: 0.82, rateMult: 0.8, volumeMult: 0.85, jawMult: 0.8, label: "😢 Sad" };
+    case "cry":
+      return { pitchMult: 0.76, rateMult: 0.72, volumeMult: 0.8, jawMult: 0.75, label: "😭 Crying" };
+    case "angry":
+      return { pitchMult: 0.86, rateMult: 1.22, volumeMult: 1.0, jawMult: 0.9, label: "😡 Angry" };
+    case "surprised":
+      return { pitchMult: 1.45, rateMult: 1.15, volumeMult: 1.0, jawMult: 1.25, label: "😲 Surprised" };
+    case "shock":
+      return { pitchMult: 1.55, rateMult: 1.22, volumeMult: 1.0, jawMult: 1.4, label: "⚡ Shocked" };
+    case "evil":
+      return { pitchMult: 0.68, rateMult: 0.85, volumeMult: 0.95, jawMult: 0.85, label: "😈 Evil" };
+    case "love":
+      return { pitchMult: 1.18, rateMult: 0.92, volumeMult: 0.95, jawMult: 1.0, label: "🥰 In Love" };
+    case "bored":
+    case "sleepy":
+      return { pitchMult: 0.82, rateMult: 0.78, volumeMult: 0.75, jawMult: 0.7, label: "🥱 Bored" };
+    case "think":
+      return { pitchMult: 0.95, rateMult: 0.9, volumeMult: 0.9, jawMult: 0.85, label: "🤔 Thinking" };
+    case "smirk":
+      return { pitchMult: 0.92, rateMult: 0.98, volumeMult: 0.95, jawMult: 0.95, label: "😏 Smirking" };
+    default:
+      return { pitchMult: 1.0, rateMult: 1.0, volumeMult: 1.0, jawMult: 1.0, label: "😐 Neutral" };
+  }
+}
+
 /** Finds the best voice match for a character preset */
-export function getBestVoice(preset?: CharacterVoicePreset, lang = "en"): SpeechSynthesisVoice | null {
+export function getBestVoice(preset?: CharacterVoicePreset, lang = "en", voiceURI?: string): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
   const voices = window.speechSynthesis.getVoices();
   if (voices.length === 0) return null;
+
+  // Direct URI / name match if specified
+  if (voiceURI) {
+    const direct = voices.find((v) => v.voiceURI === voiceURI || v.name === voiceURI);
+    if (direct) return direct;
+  }
 
   const langMatches = voices.filter((v) => v.lang.toLowerCase().startsWith(lang.toLowerCase().slice(0, 2)));
   const pool = langMatches.length > 0 ? langMatches : voices;
 
   const p = preset || "female";
   if (p === "female" || p === "cartoon") {
+    // 1st priority: natural/online neural female voices (e.g. Jenny Natural, Aria, Sonia)
+    const naturalFemale = pool.find((v) => {
+      const n = v.name.toLowerCase();
+      return (n.includes("natural") || n.includes("online") || n.includes("neural")) &&
+             (n.includes("jenny") || n.includes("aria") || n.includes("samantha") || n.includes("victoria") || n.includes("sonia") || n.includes("neerja") || n.includes("female"));
+    });
+    if (naturalFemale) return naturalFemale;
+
+    // 2nd priority: standard female voices
     const fv = pool.find((v) => {
       const n = v.name.toLowerCase();
       return n.includes("female") || n.includes("zira") || n.includes("samantha") || n.includes("victoria") || n.includes("karen") || n.includes("veena") || n.includes("susan") || n.includes("jenny");
     });
     if (fv) return fv;
   } else if (p === "male" || p === "monk") {
+    // 1st priority: natural/online neural male voices (e.g. Guy Natural, Christopher, Steffan)
+    const naturalMale = pool.find((v) => {
+      const n = v.name.toLowerCase();
+      return (n.includes("natural") || n.includes("online") || n.includes("neural")) &&
+             (n.includes("guy") || n.includes("christopher") || n.includes("steffan") || n.includes("david") || n.includes("george") || n.includes("prabhat") || n.includes("male"));
+    });
+    if (naturalMale) return naturalMale;
+
+    // 2nd priority: standard male voices
     const mv = pool.find((v) => {
       const n = v.name.toLowerCase();
       return n.includes("male") || n.includes("david") || n.includes("george") || n.includes("mark") || n.includes("alex") || n.includes("ravi") || n.includes("daniel") || n.includes("guy");
     });
     if (mv) return mv;
+  } else if (p === "kid") {
+    const kidVoice = pool.find((v) => {
+      const n = v.name.toLowerCase();
+      return n.includes("ana") || n.includes("chloe") || n.includes("child") || n.includes("kid");
+    });
+    if (kidVoice) return kidVoice;
   }
 
   // Fallback to default or first voice in pool
@@ -77,6 +143,7 @@ export function getBestVoice(preset?: CharacterVoicePreset, lang = "en"): Speech
 
 /**
  * Option A: Speaks text instantly through the browser's speech synthesis engine.
+ * Dynamically shapes vocal pitch, speed, and punctuation based on character Expression.
  */
 export function speakBrowser(
   text: string,
@@ -93,43 +160,58 @@ export function speakBrowser(
     window.speechSynthesis.resume();
   } catch {}
 
-  const u = new SpeechSynthesisUtterance(clean);
-  const voice = getBestVoice(opts.preset, opts.lang);
-  if (voice) u.voice = voice;
+  const emotion = getEmotionVoiceTuning(opts.expression);
 
-  let pitch = opts.pitch ?? 1.0;
-  let rate = opts.rate ?? 1.0;
+  // Dynamic emotional pitch & tempo modulation
+  let pitch = (opts.pitch ?? 1.0) * emotion.pitchMult;
+  let rate = (opts.rate ?? 1.0) * emotion.rateMult;
+  const volume = (opts.volume ?? 1.0) * emotion.volumeMult;
 
   switch (opts.preset) {
     case "female":
-      pitch = (opts.pitch ?? 1.0) * 1.1;
-      rate = (opts.rate ?? 1.0) * 1.0;
+      pitch *= 1.12;
       break;
     case "male":
-      pitch = (opts.pitch ?? 1.0) * 0.88;
-      rate = (opts.rate ?? 1.0) * 0.95;
+      pitch *= 0.85;
       break;
     case "kid":
-      pitch = (opts.pitch ?? 1.0) * 1.5;
-      rate = (opts.rate ?? 1.0) * 1.15;
+      pitch *= 1.55;
+      rate *= 1.15;
       break;
     case "monk":
-      pitch = (opts.pitch ?? 1.0) * 0.72;
-      rate = (opts.rate ?? 1.0) * 0.82;
+      pitch *= 0.7;
+      rate *= 0.8;
       break;
     case "robot":
-      pitch = (opts.pitch ?? 1.0) * 0.55;
-      rate = (opts.rate ?? 1.0) * 0.9;
+      pitch *= 0.55;
+      rate *= 0.9;
       break;
     case "cartoon":
-      pitch = (opts.pitch ?? 1.0) * 1.75;
-      rate = (opts.rate ?? 1.0) * 1.25;
+      pitch *= 1.75;
+      rate *= 1.25;
       break;
   }
 
+  // Emotive punctuation injection so browser speech engine inflects naturally
+  let spokenText = clean;
+  const expr = (opts.expression || "").toLowerCase();
+  if (expr === "happy" || expr === "laugh") {
+    if (!spokenText.endsWith("!")) spokenText = spokenText.replace(/[.]+$/, "") + "!";
+  } else if (expr === "sad" || expr === "cry" || expr === "bored" || expr === "sleepy") {
+    if (!spokenText.endsWith("...")) spokenText = spokenText.replace(/[!.]+$/, "") + "...";
+  } else if (expr === "angry" || expr === "shock") {
+    if (!spokenText.endsWith("!")) spokenText = spokenText.replace(/[.]+$/, "") + "!";
+  } else if (expr === "surprised") {
+    if (!spokenText.endsWith("?")) spokenText = spokenText.replace(/[.]+$/, "") + "?";
+  }
+
+  const u = new SpeechSynthesisUtterance(spokenText);
+  const voice = getBestVoice(opts.preset, opts.lang, opts.voiceURI);
+  if (voice) u.voice = voice;
+
   u.pitch = Math.max(0.1, Math.min(2.0, pitch));
   u.rate = Math.max(0.1, Math.min(2.0, rate));
-  u.volume = Math.max(0, Math.min(1.0, opts.volume ?? 1.0));
+  u.volume = Math.max(0, Math.min(1.0, volume));
 
   u.onstart = () => {
     speakingActive = true;
@@ -203,19 +285,23 @@ function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
 
 /**
  * Synthesizes an expressive vocal audio take (WAV) directly in the browser.
- * Generates natural syllable cadence, pitch envelopes, and synchronized mouth flap frames.
+ * Generates natural syllable cadence, emotional pitch curves, and synchronized mouth flap frames.
  */
 export async function generateSpeechAudioTake(
   text: string,
   actor: Actor2D,
   start: number,
+  expression?: string,
 ): Promise<AudioClip2D> {
   const clean = text.trim();
   const words = clean.split(/\s+/).filter(Boolean);
   const wordCount = Math.max(1, words.length);
 
-  // Calculate duration based on speech speed
-  const rateFactor = actor.voiceRate ?? 1.0;
+  const emotion = getEmotionVoiceTuning(expression);
+  const expr = (expression || "neutral").toLowerCase();
+
+  // Calculate duration based on speech speed and emotion rate
+  const rateFactor = (actor.voiceRate ?? 1.0) * emotion.rateMult;
   const duration = Math.max(0.8, Math.min(12.0, (wordCount * 0.38 + 0.3) / rateFactor));
 
   const sampleRate = 24000;
@@ -232,7 +318,7 @@ export async function generateSpeechAudioTake(
   else if (preset === "robot") baseF0 = 150;
   else if (preset === "cartoon") baseF0 = 360;
 
-  baseF0 *= actor.voicePitch ?? 1.0;
+  baseF0 *= (actor.voicePitch ?? 1.0) * emotion.pitchMult;
 
   // Generate syllable cadences and formant synthesis
   const syllables = Math.max(2, Math.floor(wordCount * 1.8));
@@ -247,8 +333,22 @@ export async function generateSpeechAudioTake(
     // Amplitude envelope for syllable (attack, decay, rest gap)
     const ampEnv = Math.sin(Math.min(Math.PI, syllProgress * Math.PI * 1.15));
 
-    // Pitch contour (natural slight intonation curve)
-    const pitchCurve = baseF0 * (1 + 0.08 * Math.sin(t * 5) - 0.05 * (t / duration));
+    // Pitch contour with dynamic emotional modulation
+    let pitchCurve = baseF0 * (1 + 0.08 * Math.sin(t * 5) - 0.05 * (t / duration));
+
+    // Emotional pitch shaping
+    if (expr === "sad" || expr === "cry") {
+      // Tremolo / weeping vocal quaver
+      const weep = 1 + 0.12 * Math.sin(t * 2 * Math.PI * 5.5);
+      pitchCurve *= weep * (1 - 0.15 * (t / duration));
+    } else if (expr === "happy" || expr === "laugh") {
+      // Bouncy lively pitch lilt
+      pitchCurve *= 1 + 0.18 * Math.sin(syllProgress * Math.PI * 2);
+    } else if (expr === "surprised" || expr === "shock") {
+      // High swoop downwards
+      const swoop = 1.35 - 0.35 * Math.min(1, t / 0.5);
+      pitchCurve *= swoop;
+    }
 
     // Harmonics
     let sample = 0;
@@ -263,14 +363,28 @@ export async function generateSpeechAudioTake(
       const h3 = Math.sin(2 * Math.PI * pitchCurve * 3 * t) * 0.22;
       const h4 = Math.sin(2 * Math.PI * pitchCurve * 4 * t) * 0.12;
       sample = (h1 + h2 + h3 + h4) * 0.55;
+
+      // Emotion harmonic coloring
+      if (expr === "angry") {
+        // Aggressive saturation overdrive
+        sample = Math.tanh(sample * 1.9) * 0.85;
+      } else if (expr === "evil") {
+        // Sub-octave rumble
+        sample = sample * 0.72 + Math.sin(Math.PI * pitchCurve * t) * 0.28;
+      }
     }
 
-    samples[i] = sample * ampEnv * 0.75;
+    samples[i] = sample * ampEnv * 0.75 * emotion.volumeMult;
   }
 
-  // Generate 20fps mouth lip-sync keyframes
+  // Generate 20fps mouth lip-sync keyframes with emotion blendshapes
   const fps = 20;
   const frameCount = Math.floor(duration * fps);
+  const isHappy = expr === "happy" || expr === "laugh" || expr === "love";
+  const isSad = expr === "sad" || expr === "cry";
+  const isAngry = expr === "angry";
+  const isShock = expr === "shock" || expr === "surprised";
+
   for (let f = 0; f < frameCount; f++) {
     const t = f / fps;
     const syllProgress = (t % syllableDur) / syllableDur;
@@ -278,9 +392,13 @@ export async function generateSpeechAudioTake(
     mocapFrames.push({
       t,
       face: {
-        jaw: Math.min(1.0, flap * 0.85 + 0.1),
+        jaw: Math.min(1.0, flap * emotion.jawMult * 0.85 + 0.1),
         talk: flap > 0.15,
-        smile: preset === "female" || preset === "kid" ? 0.6 : 0.2,
+        smile: isHappy ? 0.9 : preset === "female" || preset === "kid" ? 0.5 : 0.2,
+        frown: isSad ? 0.85 : isAngry ? 0.4 : 0,
+        angry: isAngry ? 0.9 : 0,
+        wide: isShock ? 0.9 : 0,
+        browUp: isSad ? 0.5 : isShock ? 0.8 : 0,
       },
     });
   }
@@ -296,7 +414,7 @@ export async function generateSpeechAudioTake(
     start: Math.round(start * 10) / 10,
     duration: Math.round(duration * 10) / 10,
     audioUrl,
-    label: `🗣️ "${previewLabel}"`,
+    label: `🗣️ "${previewLabel}" (${emotion.label})`,
     voicePreset: preset,
     volume: 1.0,
     mocapFrames,
