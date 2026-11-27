@@ -47,7 +47,13 @@ export interface Actor2D {
   statHeight?: string; // comparison height (e.g. "1.75 m / 5'9\"")
   statSub?: string; // extra stat subtitle (e.g. "Baseline scale")
   showStat?: boolean;
+  voicePreset?: CharacterVoicePreset;
+  voicePitch?: number; // 0.5 to 2.0 (default 1.0)
+  voiceRate?: number;  // 0.5 to 1.8 (default 1.0)
+  voiceLang?: string;  // e.g. "en-US", "en-IN", "en-GB"
 }
+
+export type CharacterVoicePreset = "female" | "male" | "kid" | "monk" | "robot" | "cartoon";
 
 export interface Obj2D {
   id: string;
@@ -137,5 +143,5 @@ export interface AudioClip2D {
   voicePreset?: string;
   volume?: number;
   label?: string;
-  mocapFrames?: { t: number; face: Record<string, number>; head?: number }[];
+  mocapFrames?: { t: number; face: Record<string, any>; head?: number }[];
 }

@@ -12,6 +12,7 @@ import { fitAspect } from "../three/SceneView";
 import type { Obj2D } from "./types2d";
 import { liveMocap2D } from "./mocap2d";
 import { voiceEngine } from "./voiceEngine";
+import { isSpeaking, speakBrowser, stopSpeaking } from "./speech2d";
 
 type Drag = { kind: "actor" | "object"; id: string; dx: number; dy: number };
 
@@ -224,6 +225,7 @@ export function Stage2D() {
         clock2d.t += dt;
         const dur = projectDuration(st.clips, st.audioClips, st.cameraClips);
         if (clock2d.t >= dur) {
+          stopSpeaking();
           if (st.loop) clock2d.t = 0;
           else {
             clock2d.t = dur;
@@ -231,6 +233,7 @@ export function Stage2D() {
           }
         }
       } else {
+        stopSpeaking();
         clock2d.t = st.t;
       }
       // remove characters whose clips have all finished (autoRemove)
@@ -305,6 +308,28 @@ export function Stage2D() {
           }
         }
 
+        // 3. Live Speech Synthesis for Speech Bubbles (Option A)
+        if (!activeClip && st.playing) {
+          const speechActionClip = st.clips.find(
+            (c) => c.actorId === a.id && clock2d.t >= c.start && clock2d.t < c.start + c.duration && c.say && c.say.trim()
+          );
+          if (speechActionClip && speechActionClip.say) {
+            if (clock2d.t - speechActionClip.start < Math.max(0.08, dt * 1.5) && clock2d.t >= speechActionClip.start) {
+              speakBrowser(speechActionClip.say, {
+                preset: a.voicePreset,
+                pitch: a.voicePitch,
+                rate: a.voiceRate,
+                lang: a.voiceLang,
+              });
+            }
+            if (isSpeaking()) {
+              const flap = 0.35 + Math.sin(clock2d.t * 22) * 0.3;
+              frame.face.jaw = Math.max(frame.face.jaw ?? 0, flap);
+              frame.face.talk = true;
+            }
+          }
+        }
+
         applyFigure(d, frame, gyRef.current + (a.y ?? 0), a.scale, frame.rotation ?? (a.rotation ?? 0));
       }
       for (const o of st.objects) {
@@ -344,6 +369,7 @@ export function Stage2D() {
     return () => {
       cancelAnimationFrame(raf);
       voiceEngine.stopAllPlayback();
+      stopSpeaking();
     };
   }, []);
 

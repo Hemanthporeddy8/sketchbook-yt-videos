@@ -19,6 +19,7 @@ import { cn } from "../utils/cn";
 import MiniFigure from "./MiniFigure";
 import { CharacterPreviewSVG } from "./rig2d";
 import { DressDrawModal } from "./DressDrawModal";
+import { generateSpeechAudioTake, speakBrowser } from "./speech2d";
 
 /* ---------------------------------------------------------------- */
 /* Left panel                                                       */
@@ -1175,6 +1176,62 @@ function ActorEditor({ id }: { id: string }) {
             </Field>
           </>
         )}
+      <div className="space-y-2 rounded-lg border border-violet-500/30 bg-violet-950/20 p-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
+            🗣️ Character Voice & Accent
+          </span>
+          <button
+            onClick={() => {
+              speakBrowser(`Hello! My name is ${actor.name}.`, {
+                preset: actor.voicePreset,
+                pitch: actor.voicePitch,
+                rate: actor.voiceRate,
+                lang: actor.voiceLang,
+              });
+            }}
+            className="flex items-center gap-1 rounded bg-violet-600/40 px-2 py-0.5 text-[10px] font-semibold text-violet-200 hover:bg-violet-600/60 transition-colors"
+            title="Test character speech"
+          >
+            🔊 Test Voice
+          </button>
+        </div>
+        <Field label="Voice Type">
+          <Select
+            value={actor.voicePreset ?? "female"}
+            onChange={(v) => patchActor(id, { voicePreset: v as any })}
+            options={[
+              { value: "female", label: "👩 Female / Cheerful (Ava)" },
+              { value: "male", label: "👨 Deep Male / Confident (Ben)" },
+              { value: "kid", label: "🧒 Child / High Pitch" },
+              { value: "monk", label: "🧓 Monk / Wise Elder" },
+              { value: "robot", label: "🤖 Robot / Sci-Fi" },
+              { value: "cartoon", label: "🐿️ Cartoon / Squeaky" },
+            ]}
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Pitch">
+            <Slider
+              value={actor.voicePitch ?? 1.0}
+              min={0.5}
+              max={2.0}
+              step={0.05}
+              onChange={(v) => patchActor(id, { voicePitch: v })}
+              format={(v) => `${v.toFixed(2)}×`}
+            />
+          </Field>
+          <Field label="Speed">
+            <Slider
+              value={actor.voiceRate ?? 1.0}
+              min={0.6}
+              max={1.6}
+              step={0.05}
+              onChange={(v) => patchActor(id, { voiceRate: v })}
+              format={(v) => `${v.toFixed(2)}×`}
+            />
+          </Field>
+        </div>
       </div>
 
       <Toggle label="Away: remove when the character finishes its purpose" checked={!!actor.autoRemove} onChange={(v) => patchActor(id, { autoRemove: v })} />
@@ -1289,6 +1346,7 @@ function ClipEditor({ id }: { id: string }) {
   const actor = useStudio2d((s) => (s.selected?.kind === "clip" ? s.actors.find((a) => a.id === (s.clips.find((c) => c.id === s.selected?.id)?.actorId)) : undefined));
   const obj = useStudio2d((s) => (s.selected?.kind === "clip" ? s.objects.find((o) => o.id === (s.clips.find((c) => c.id === s.selected?.id)?.actorId)) : undefined));
   const patchClip = useStudio2d((s) => s.patchClip);
+  const addAudioClip = useStudio2d((s) => s.addAudioClip);
   const removeSelected = useStudio2d((s) => s.removeSelected);
   if (!clip) return null;
   if (clip.kind !== "drive" && !actor) return null;
@@ -1386,9 +1444,45 @@ function ClipEditor({ id }: { id: string }) {
         </Field>
       )}
       {!isRest && (
-        <Field label="Speech bubble">
-          <input value={clip.say} onChange={(e) => p({ say: e.target.value })} placeholder="(none)" className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-slate-100 outline-none focus:border-[#e87d0d]/70" />
-        </Field>
+        <div className="space-y-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2">
+          <Field label="Speech bubble">
+            <input
+              value={clip.say}
+              onChange={(e) => p({ say: e.target.value })}
+              placeholder="e.g. Welcome to my house!"
+              className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-slate-100 outline-none focus:border-amber-400"
+            />
+          </Field>
+          {clip.say?.trim() && (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <button
+                onClick={() => {
+                  speakBrowser(clip.say, {
+                    preset: actor?.voicePreset,
+                    pitch: actor?.voicePitch,
+                    rate: actor?.voiceRate,
+                    lang: actor?.voiceLang,
+                  });
+                }}
+                className="flex-1 flex items-center justify-center gap-1 rounded bg-white/10 py-1.5 text-[10.5px] font-semibold text-white hover:bg-white/20 transition-colors"
+                title="Speak text instantly using browser speech synthesis"
+              >
+                🔊 Preview Voice
+              </button>
+              <button
+                onClick={async () => {
+                  if (!actor) return;
+                  const take = await generateSpeechAudioTake(clip.say, actor, clip.start);
+                  addAudioClip(take);
+                }}
+                className="flex-1 flex items-center justify-center gap-1 rounded bg-gradient-to-r from-violet-600 to-indigo-600 py-1.5 text-[10.5px] font-semibold text-white shadow hover:brightness-110 active:scale-95 transition-all"
+                title="Generate synchronized audio take on timeline for playback and video export"
+              >
+                ⚡ Add to Timeline
+              </button>
+            </div>
+          )}
+        </div>
       )}
       <button onClick={removeSelected} className="flex w-full items-center justify-center gap-1 rounded-md bg-red-500/15 py-1.5 text-[11px] text-red-300 hover:bg-red-500/25">
         <Trash2 className="h-3 w-3" /> Delete clip
