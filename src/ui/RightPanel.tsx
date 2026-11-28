@@ -417,8 +417,108 @@ function ClipEditor({ clip }: { clip: Clip }) {
           </div>
         </div>
 
+        {/* Walk / Translation Path (just like in 2D) */}
+        <div className="space-y-2 rounded-lg border border-amber-500/25 bg-amber-950/15 p-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-amber-300">🚶 Walk / Movement Path</span>
+            <Toggle
+              label={clip.targetX !== undefined ? "Active" : "Off"}
+              checked={clip.targetX !== undefined}
+              onChange={(v) => {
+                if (v) {
+                  const ch = useStore.getState().characters.find((c) => c.id === clip.characterId);
+                  const startX = ch?.position[0] ?? 0;
+                  const startZ = ch?.position[2] ?? 0;
+                  patchClip(clip.id, {
+                    startX,
+                    startZ,
+                    targetX: startX + 3,
+                    targetZ: startZ,
+                  });
+                } else {
+                  patchClip(clip.id, {
+                    startX: undefined,
+                    startZ: undefined,
+                    targetX: undefined,
+                    targetZ: undefined,
+                  });
+                }
+              }}
+            />
+          </div>
+          {clip.targetX !== undefined && (
+            <div className="space-y-2 pt-1 text-[11px]">
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Start X (m)">
+                  <NumberInput
+                    value={clip.startX ?? 0}
+                    step={0.5}
+                    onChange={(v) => patchClip(clip.id, { startX: v })}
+                  />
+                </Field>
+                <Field label="Start Z (m)">
+                  <NumberInput
+                    value={clip.startZ ?? 0}
+                    step={0.5}
+                    onChange={(v) => patchClip(clip.id, { startZ: v })}
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Target X (m)">
+                  <NumberInput
+                    value={clip.targetX ?? 0}
+                    step={0.5}
+                    onChange={(v) => patchClip(clip.id, { targetX: v })}
+                  />
+                </Field>
+                <Field label="Target Z (m)">
+                  <NumberInput
+                    value={clip.targetZ ?? 0}
+                    step={0.5}
+                    onChange={(v) => patchClip(clip.id, { targetZ: v })}
+                  />
+                </Field>
+              </div>
+              <div className="flex flex-wrap gap-1 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ch = useStore.getState().characters.find((c) => c.id === clip.characterId);
+                    if (ch) patchClip(clip.id, { startX: ch.position[0], startZ: ch.position[2] });
+                  }}
+                  className="rounded bg-white/10 px-2 py-1 text-[10px] text-slate-200 hover:bg-white/20"
+                >
+                  📍 Set Current as Start
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ch = useStore.getState().characters.find((c) => c.id === clip.characterId);
+                    if (ch) patchClip(clip.id, { targetX: ch.position[0], targetZ: ch.position[2] });
+                  }}
+                  className="rounded bg-white/10 px-2 py-1 text-[10px] text-slate-200 hover:bg-white/20"
+                >
+                  🎯 Set Current as Target
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sx = clip.startX ?? 0;
+                    patchClip(clip.id, { targetX: sx + 3 });
+                  }}
+                  className="rounded bg-white/10 px-2 py-1 text-[10px] text-slate-200 hover:bg-white/20"
+                >
+                  ⏩ +3m Forward
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="space-y-1.5 rounded-lg border border-cyan-500/25 bg-cyan-950/20 p-2.5">
           <Field label="Speech Bubble / Dialogue">
+
             <input
               value={clip.say ?? ""}
               onChange={(e) => patchClip(clip.id, { say: e.target.value, talk: true })}

@@ -33,3 +33,10 @@ export function installPointerUp() {
   window.addEventListener("pointerup", onUp);
   return () => window.removeEventListener("pointerup", onUp);
 }
+
+/** ID of character currently walking via real-time WASD / arrow keys */
+export let liveWalkingCharId: string | null = null;
+export function setLiveWalkingCharId(id: string | null) {
+  liveWalkingCharId = id;
+}
+

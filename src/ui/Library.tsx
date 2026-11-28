@@ -1,17 +1,30 @@
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Sparkles } from "lucide-react";
 import { CATALOG, CATALOG_CATEGORIES, type CatalogCategory } from "../lib/catalog";
 import { ACTION_CATEGORIES, ACTIONS, motionVariantCount, actionsForRig } from "../lib/motions";
 import { useStore } from "../store";
 import { usePlayback } from "../playback";
 import { cn } from "../utils/cn";
+import { ImageTo3DModal } from "../three/ImageTo3DModal";
 
 const PAGE = 120;
 
 export function Library() {
   const [sub, setSub] = useState<"characters" | "motions">("characters");
+  const [imgModalOpen, setImgModalOpen] = useState(false);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="p-2 border-b border-white/5">
+        <button
+          onClick={() => setImgModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/40 py-2 text-xs font-bold text-cyan-200 hover:from-cyan-500/30 hover:to-blue-600/30 shadow-md transition"
+        >
+          <Sparkles className="h-4 w-4 text-cyan-300" />
+          <span>📦 Image to 3D Model Converter</span>
+        </button>
+      </div>
+
       <div className="flex gap-1 border-b border-white/5 p-2">
         {(["characters", "motions"] as const).map((k) => (
           <button
@@ -27,6 +40,7 @@ export function Library() {
         ))}
       </div>
       {sub === "characters" ? <CharacterLibrary /> : <MotionLibrary />}
+      {imgModalOpen && <ImageTo3DModal onClose={() => setImgModalOpen(false)} />}
     </div>
   );
 }

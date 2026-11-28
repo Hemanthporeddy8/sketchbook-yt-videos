@@ -68,6 +68,12 @@ export interface Clip {
   say?: string; // speech bubble dialogue
   footageId?: string;
   label?: string;
+  // walking path
+  startX?: number;
+  startZ?: number;
+  targetX?: number;
+  targetZ?: number;
+  walkToPoint?: boolean;
 }
 
 export interface TakeFrame {
@@ -101,15 +107,21 @@ export type ShapeType =
   | "torus"
   | "plane"
   | "pyramid"
-  | "capsule";
+  | "capsule"
+  | "custom-3d";
 
 export interface Shape {
   id: string;
+  name?: string;
   type: ShapeType;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
   color: string;
+  imageData?: string;
+  customMode?: "extrude" | "relief" | "voxel";
+  depth?: number;
+  bevel?: number;
 }
 
 /** Timeline track id for imported video footage (not a character). */

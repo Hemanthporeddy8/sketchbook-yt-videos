@@ -90,6 +90,7 @@ export interface StudioState {
   setCamPreset: (preset: string) => void;
 
   addShape: (type?: ShapeType) => string;
+  addCustom3DModel: (params: { name: string; imageData: string; customMode: "extrude" | "relief" | "voxel"; depth: number; bevel?: number }) => string;
   patchShape: (id: string, patch: Partial<Shape>) => void;
   removeShape: (id: string) => void;
   duplicateShape: (id: string) => void;
@@ -260,6 +261,24 @@ export const useStore = create<StudioState>()(
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
           color: get().paletteColor,
+        };
+        set((s) => ({ history: pushHist(s), shapes: [...s.shapes, shape], selectedShapeId: id, buildTool: "shape" }));
+        return id;
+      },
+      addCustom3DModel: (params) => {
+        const id = uid();
+        const shape: Shape = {
+          id,
+          name: params.name || "Custom 3D Model",
+          type: "custom-3d",
+          position: [0, 0.8, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+          color: "#38bdf8",
+          imageData: params.imageData,
+          customMode: params.customMode,
+          depth: params.depth,
+          bevel: params.bevel,
         };
         set((s) => ({ history: pushHist(s), shapes: [...s.shapes, shape], selectedShapeId: id, buildTool: "shape" }));
         return id;

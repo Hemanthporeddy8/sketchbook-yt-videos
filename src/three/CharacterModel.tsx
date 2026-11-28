@@ -21,7 +21,7 @@ import {
 } from "./rigs";
 import { ACTION_MAP, evalMotion, IDLE_ACTION, type PoseParams } from "../lib/motions";
 import { liveRig } from "../mocap/engine";
-import { setPending } from "./runtime";
+import { liveWalkingCharId, setPending } from "./runtime";
 import { isSpeaking } from "../twod/speech2d";
 
 const IDLE_PARAMS: PoseParams = { style: "normal", intensity: 1, speed: 1, mirror: false, variant: 0 };
@@ -150,6 +150,23 @@ export function CharacterModel({ ch, selected, editable }: { ch: SceneCharacter;
       if (clip.kind === "action" && clip.actionId) {
         const action = ACTION_MAP[clip.actionId];
         if (action && action.rig === rig.type) {
+          // Path / walking movement interpolation
+          if (clip.targetX !== undefined && clip.targetZ !== undefined && clip.duration > 0) {
+            const progress = Math.max(0, Math.min(1, (t - clip.start) / clip.duration));
+            const startX = clip.startX ?? ch.position[0];
+            const startZ = clip.startZ ?? ch.position[2];
+            const curX = startX + (clip.targetX - startX) * progress;
+            const curZ = startZ + (clip.targetZ - startZ) * progress;
+            if (group.current) {
+              group.current.position.x = curX;
+              group.current.position.z = curZ;
+              const dx = clip.targetX - startX;
+              const dz = clip.targetZ - startZ;
+              if (Math.hypot(dx, dz) > 0.05) {
+                group.current.rotation.y = Math.atan2(dx, dz);
+              }
+            }
+          }
           const pose = evalMotion(action, t - clip.start, {
             style: clip.style ?? "normal",
             intensity: clip.intensity ?? 1,
@@ -164,7 +181,24 @@ export function CharacterModel({ ch, selected, editable }: { ch: SceneCharacter;
       }
     }
 
+    // 2.5) Real-time WASD walking gait
+    if (liveWalkingCharId === ch.id) {
+      const walkActionId = rig.type === "human" ? "walk" : (IDLE_ACTION[rig.type] ?? "walk");
+      const walkAction = ACTION_MAP[walkActionId];
+      if (walkAction && walkAction.rig === rig.type) {
+        const pose = evalMotion(walkAction, sec * 1.5, IDLE_PARAMS);
+        blendPose(rig, pose.rot, pose.py, delta, pose.sq);
+        applyFaceToRig(rig, faceFor("neutral", false, sec));
+        return;
+      }
+    }
+
     // 3) Idle loop
+    if (group.current && clip?.targetX === undefined && liveWalkingCharId !== ch.id) {
+      group.current.position.x = ch.position[0];
+      group.current.position.z = ch.position[2];
+      group.current.rotation.y = ch.rotationY;
+    }
     const idle = ACTION_MAP[IDLE_ACTION[rig.type]];
     const pose = evalMotion(idle, sec, IDLE_PARAMS);
     blendPose(rig, pose.rot, pose.py, delta, pose.sq);

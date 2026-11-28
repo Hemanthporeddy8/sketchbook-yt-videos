@@ -1,60 +1,71 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, TransformControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useStore, sceneEnd } from "../store";
 import { usePlayback } from "../playback";
 import { worldById, WorldEnvironment, type WorldDef } from "./Worlds";
 import { CharacterModel } from "./CharacterModel";
-import { installPointerUp, runtime } from "./runtime";
+import { installPointerUp, liveWalkingCharId, runtime, setLiveWalkingCharId, setPending } from "./runtime";
 import { FootageScreen } from "./FootageScreen";
 import { CaptionLayer } from "./CaptionLayer";
 import { speakBrowser, stopSpeaking } from "../twod/speech2d";
+import { convertImageTo3D } from "./imageTo3D";
+import type { Shape } from "../lib/types";
+
+let activeOrbitControls: any = null;
 
 /** Applies camera presets (Wide, Close, Low, Top, Side, Follow). */
 function CameraRig() {
   const cmd = useStore((s) => s.camCmd);
   const camera = useThree((s) => s.camera);
-  const controls = useThree((s) => s.controls) as unknown as { target: THREE.Vector3; update: () => void } | null;
+  const controls = useThree((s) => s.controls);
   useEffect(() => {
     if (!cmd.nonce) return;
-    const st = useStore.getState();
-    let pos: [number, number, number] = [0, 2.6, 9.5];
-    let target: [number, number, number] = [0, 1, 0];
-    switch (cmd.preset) {
-      case "close":
-        pos = [0, 1.7, 3.2];
-        target = [0, 1.25, 0];
-        break;
-      case "low":
-        pos = [0, 0.5, 4.5];
-        target = [0, 1.1, 0];
-        break;
-      case "top":
-        pos = [0, 11, 0.01];
-        target = [0, 0, 0];
-        break;
-      case "side":
-        pos = [7, 1.8, 0];
-        target = [0, 1, 0];
-        break;
-      case "follow": {
-        const c = st.characters.find((x) => x.id === st.selectedCharId);
-        if (c) {
-          pos = [c.position[0], 1.6, c.position[2] + 3.6];
-          target = [c.position[0], 1.1, c.position[2]];
+    try {
+      const st = useStore.getState();
+      let pos: [number, number, number] = [0, 2.6, 9.5];
+      let target: [number, number, number] = [0, 1, 0];
+      switch (cmd.preset) {
+        case "close":
+          pos = [0, 1.7, 3.2];
+          target = [0, 1.25, 0];
+          break;
+        case "low":
+          pos = [0, 0.5, 4.5];
+          target = [0, 1.1, 0];
+          break;
+        case "top":
+          pos = [0, 11, 0.01];
+          target = [0, 0, 0];
+          break;
+        case "side":
+          pos = [7, 1.8, 0];
+          target = [0, 1, 0];
+          break;
+        case "follow": {
+          const c = st.characters.find((x) => x.id === st.selectedCharId);
+          if (c) {
+            pos = [c.position[0], 1.6, c.position[2] + 3.6];
+            target = [c.position[0], 1.1, c.position[2]];
+          }
+          break;
         }
-        break;
+        default:
+          break;
       }
-      default:
-        break;
-    }
-    camera.position.set(...pos);
-    if (controls) {
-      controls.target.set(...target);
-      controls.update();
-    } else {
-      camera.lookAt(...target);
+      if (camera && typeof camera.position?.set === "function") {
+        camera.position.set(pos[0], pos[1], pos[2]);
+      }
+      const ctrl = activeOrbitControls || controls;
+      if (ctrl && ctrl.target && typeof ctrl.target.set === "function") {
+        ctrl.target.set(target[0], target[1], target[2]);
+        ctrl.update?.();
+      } else if (camera && typeof camera.lookAt === "function") {
+        camera.lookAt(target[0], target[1], target[2]);
+      }
+    } catch (err) {
+      console.warn("CameraRig update error:", err);
     }
   }, [cmd.nonce, camera, controls, cmd.preset]);
   return null;
@@ -132,10 +143,194 @@ function Lights({ world }: { world: WorldDef }) {
   );
 }
 
+function ShapeItem({ shape, selected, editable }: { shape: Shape; selected: boolean; editable: boolean }) {
+  const group = useRef<THREE.Group>(null!);
+  const [customMesh, setCustomMesh] = useState<THREE.Mesh | THREE.Group | null>(null);
+  const selectShape = useStore((s) => s.selectShape);
+  const patchShape = useStore((s) => s.patchShape);
+  const gizmo = useStore((s) => s.gizmo);
+
+  useEffect(() => {
+    if (shape.type === "custom-3d" && shape.imageData) {
+      let cancelled = false;
+      convertImageTo3D(shape.imageData, {
+        mode: shape.customMode || "extrude",
+        depth: shape.depth || 0.25,
+        bevel: shape.bevel || 0.02,
+      })
+        .then(({ mesh }) => {
+          if (!cancelled) setCustomMesh(mesh);
+        })
+        .catch((e) => console.warn("Custom 3D model render error:", e));
+      return () => {
+        cancelled = true;
+      };
+    } else {
+      setCustomMesh(null);
+    }
+  }, [shape.type, shape.imageData, shape.customMode, shape.depth, shape.bevel]);
+
+  const geo = useMemo(() => {
+    switch (shape.type) {
+      case "box":
+        return new THREE.BoxGeometry(1, 1, 1);
+      case "sphere":
+        return new THREE.SphereGeometry(0.5, 32, 24);
+      case "cylinder":
+        return new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
+      case "cone":
+        return new THREE.ConeGeometry(0.5, 1, 32);
+      case "torus":
+        return new THREE.TorusGeometry(0.4, 0.14, 16, 48);
+      case "pyramid":
+        return new THREE.ConeGeometry(0.6, 1, 4);
+      case "capsule":
+        return new THREE.CapsuleGeometry(0.3, 0.6, 8, 16);
+      case "plane":
+        return new THREE.BoxGeometry(1, 0.04, 1);
+      default:
+        return null;
+    }
+  }, [shape.type]);
+
+  const mat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: shape.color || "#38bdf8",
+        roughness: 0.4,
+        metalness: 0.1,
+      }),
+    [shape.color],
+  );
+
+  return (
+    <>
+      <group
+        ref={group}
+        position={shape.position}
+        rotation={shape.rotation}
+        scale={shape.scale}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          setPending(e, () => selectShape(shape.id));
+        }}
+      >
+        {shape.type === "custom-3d" && customMesh ? (
+          <primitive object={customMesh} />
+        ) : geo ? (
+          <mesh geometry={geo} material={mat} castShadow receiveShadow />
+        ) : null}
+      </group>
+      {selected && editable && (
+        <TransformControls
+          object={group}
+          mode={gizmo}
+          makeDefault
+          onMouseUp={() => {
+            const g = group.current;
+            if (!g) return;
+            patchShape(shape.id, {
+              position: [g.position.x, g.position.y, g.position.z],
+              rotation: [g.rotation.x, g.rotation.y, g.rotation.z],
+              scale: [g.scale.x, g.scale.y, g.scale.z],
+            });
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/** Interactive WASD / Arrow Key controller for moving characters in 3D Film mode. */
+function WASDWalkingController() {
+  const selectedCharId = useStore((s) => s.selectedCharId);
+  const patchCharacter = useStore((s) => s.patchCharacter);
+  const keysDown = useRef(new Set<string>());
+  const camera = useThree((s) => s.camera);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      const k = e.code.toLowerCase();
+      if (["keyw", "keys", "keya", "keyd", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) {
+        keysDown.current.add(k);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      keysDown.current.delete(e.code.toLowerCase());
+    };
+    const onBlur = () => {
+      keysDown.current.clear();
+      setLiveWalkingCharId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+      keysDown.current.clear();
+      setLiveWalkingCharId(null);
+    };
+  }, []);
+
+  useFrame((_, dt) => {
+    if (!selectedCharId || keysDown.current.size === 0) {
+      if (liveWalkingCharId === selectedCharId) {
+        setLiveWalkingCharId(null);
+      }
+      return;
+    }
+
+    const st = useStore.getState();
+    const ch = st.characters.find((c) => c.id === selectedCharId);
+    if (!ch) return;
+
+    let fwd = 0;
+    let right = 0;
+    const kd = keysDown.current;
+    if (kd.has("keyw") || kd.has("arrowup")) fwd += 1;
+    if (kd.has("keys") || kd.has("arrowdown")) fwd -= 1;
+    if (kd.has("keyd") || kd.has("arrowright")) right += 1;
+    if (kd.has("keya") || kd.has("arrowleft")) right -= 1;
+
+    if (fwd === 0 && right === 0) {
+      setLiveWalkingCharId(null);
+      return;
+    }
+
+    setLiveWalkingCharId(selectedCharId);
+
+    const camEuler = new THREE.Euler().setFromQuaternion(camera.quaternion, "YXZ");
+    const camYaw = camEuler.y;
+
+    const inputAngle = Math.atan2(right, fwd);
+    const moveAngle = camYaw + inputAngle;
+
+    const speed = 2.4 * dt;
+    const dx = Math.sin(moveAngle) * speed;
+    const dz = Math.cos(moveAngle) * speed;
+
+    const newX = ch.position[0] + dx;
+    const newZ = ch.position[2] + dz;
+
+    patchCharacter(selectedCharId, {
+      position: [newX, ch.position[1], newZ],
+      rotationY: moveAngle,
+    });
+  });
+
+  return null;
+}
+
 function Scene() {
   const world = worldById(useStore((s) => s.worldId));
   const characters = useStore((s) => s.characters);
   const selectedCharId = useStore((s) => s.selectedCharId);
+  const shapes = useStore((s) => s.shapes);
+  const selectedShapeId = useStore((s) => s.selectedShapeId);
 
   useEffect(() => installPointerUp(), []);
 
@@ -147,11 +342,24 @@ function Scene() {
       {characters.map((ch) => (
         <CharacterModel key={ch.id} ch={ch} selected={ch.id === selectedCharId} editable />
       ))}
+      {shapes.map((s) => (
+        <ShapeItem key={s.id} shape={s} selected={s.id === selectedShapeId} editable />
+      ))}
+      <WASDWalkingController />
       <FootageScreen />
       <CaptionLayer />
       <CameraRig />
       <PlaybackDriver />
-      <OrbitControls makeDefault enableDamping dampingFactor={0.12} target={[0, 1, 0]} maxPolarAngle={Math.PI * 0.495} minDistance={1} maxDistance={500} />
+      <OrbitControls
+        ref={(el: any) => { activeOrbitControls = el; }}
+        makeDefault
+        enableDamping
+        dampingFactor={0.12}
+        target={[0, 1, 0]}
+        maxPolarAngle={Math.PI * 0.495}
+        minDistance={1}
+        maxDistance={500}
+      />
     </>
   );
 }
@@ -278,8 +486,14 @@ export function SceneView() {
           <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-200">{aspect}</span>
           <span className="rounded bg-cyan-500/80 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-black">FILM</span>
         </div>
+        <div className="pointer-events-none absolute bottom-2 left-2 hidden items-center gap-2 rounded bg-black/75 px-2.5 py-1 text-[10.5px] font-medium text-slate-300 backdrop-blur-md border border-white/10 sm:flex shadow-lg">
+          <span className="text-cyan-400 font-bold">🕹️ WASD / Arrows:</span> Walk selected character
+          <span className="text-slate-600">|</span>
+          <span className="text-amber-400 font-bold">G / R / S:</span> Move / Rotate / Scale
+        </div>
         <FilmShadingStrip />
       </div>
     </div>
+
   );
 }
