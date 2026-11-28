@@ -10,6 +10,7 @@ import {
   applyFace,
   applyFaceToRig,
   applyQuatPose,
+  applyXrayMode,
   buildRig,
   EXPRESSIONS,
   NEUTRAL_FACE,
@@ -113,6 +114,12 @@ export function CharacterModel({ ch, selected, editable }: { ch: SceneCharacter;
   }, [rig, ch.id]);
 
   const ringMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#22d3ee", transparent: true, opacity: 0.85, depthWrite: false }), []);
+  const shading = useStore((s) => s.shading);
+  const xrayOpacity = useStore((s) => s.xrayOpacity);
+
+  useEffect(() => {
+    applyXrayMode(rig.root, shading === "xray", xrayOpacity, shading === "wireframe");
+  }, [rig, shading, xrayOpacity]);
 
   useFrame((state, delta) => {
     const t = usePlayback.getState().time;

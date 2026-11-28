@@ -25,6 +25,8 @@ export const BLOCK_COLORS = [
   "#7e22ce", "#be185d", "#dc2626", "#ea580c", "#facc15", "#f8fafc", "#1f2937", "#86efac",
 ];
 
+export type ViewportShading = "solid" | "wireframe" | "material" | "xray";
+
 export interface StudioState {
   projectName: string;
   mode: Mode;
@@ -32,6 +34,8 @@ export interface StudioState {
   rightTab: RightTab;
   aspect: Aspect;
   worldId: string;
+  shading: ViewportShading;
+  xrayOpacity: number;
 
   characters: SceneCharacter[];
   selectedCharId: string | null;
@@ -61,6 +65,8 @@ export interface StudioState {
   setRightTab: (t: RightTab) => void;
   setAspect: (a: Aspect) => void;
   setWorld: (id: string) => void;
+  setShading: (s: ViewportShading) => void;
+  setXrayOpacity: (o: number) => void;
 
   addCharacter: (entry: CatalogEntry) => string;
   removeCharacter: (id: string) => void;
@@ -149,6 +155,8 @@ export const useStore = create<StudioState>()(
       rightTab: "inspector",
       aspect: "16:9",
       worldId: "meadow",
+      shading: "material",
+      xrayOpacity: 0.45,
 
       characters: starterCharacters(),
       selectedCharId: "c_human",
@@ -178,6 +186,8 @@ export const useStore = create<StudioState>()(
       setRightTab: (t) => set({ rightTab: t }),
       setAspect: (a) => set({ aspect: a }),
       setWorld: (id) => set({ worldId: id }),
+      setShading: (s) => set({ shading: s }),
+      setXrayOpacity: (o) => set({ xrayOpacity: o }),
 
       addCharacter: (entry) => {
         const id = uid();

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { add, ball, box, buildTree, cyl, darker, glass, glow, mat, prismRoof, wedge, type TreeSpec } from "./geometry";
 
-export type AssetCat = "Nature" | "Buildings" | "Roads & Streets" | "Vehicles" | "Props" | "Mechanics" | "Shapes";
+export type AssetCat = "Nature" | "Buildings" | "Roads & Streets" | "Vehicles" | "Props" | "Mechanics" | "Shapes" | "Zack D. & Science";
 export type VehicleKind = "car" | "truck" | "bike" | "tank" | "tractor" | "heli" | "plane" | "hover";
 export type MechKind = "spin" | "oscillate" | "bounce" | "forward";
 
@@ -1102,12 +1102,196 @@ SHAPES.forEach((s) =>
 );
 
 /* ------------------------------------------------------------------ */
+/* Zack D. & Science (Medical, Anatomical Cutaway & Microscopic Props)  */
+/* ------------------------------------------------------------------ */
+
+push({
+  id: "zack-syringe",
+  name: "Medical Syringe & Needle",
+  cat: "Zack D. & Science",
+  sub: "Medical",
+  emoji: "💉",
+  colorable: true,
+  solid: false,
+  build: () => {
+    const g = G();
+    cyl(g, 0.22, 0.22, 1.2, glass(), 0, 0.6, 0);
+    for (let i = 0; i < 5; i++) {
+      cyl(g, 0.225, 0.225, 0.02, mat("#0284c7"), 0, 0.25 + i * 0.18, 0);
+    }
+    cyl(g, 0.19, 0.19, 0.7, mat("#dc2626", { roughness: 0.1, transparent: true, opacity: 0.85 }), 0, 0.35, 0);
+    cyl(g, 0.06, 0.06, 1.0, mat("#f8fafc"), 0, 1.2, 0);
+    cyl(g, 0.2, 0.2, 0.08, mat("#1e293b"), 0, 0.7, 0);
+    cyl(g, 0.24, 0.24, 0.04, mat("#f8fafc"), 0, 1.7, 0);
+    box(g, 0.65, 0.04, 0.3, mat("#f8fafc"), 0, 1.2, 0);
+    cyl(g, 0.06, 0.08, 0.15, mat("#94a3b8"), 0, 0.07, 0);
+    cyl(g, 0.015, 0.015, 0.8, mat("#e2e8f0", { metalness: 0.9, roughness: 0.1 }), 0, -0.4, 0);
+    return g;
+  },
+});
+
+push({
+  id: "zack-tooth-cutaway",
+  name: "Tooth Anatomy Cutaway",
+  cat: "Zack D. & Science",
+  sub: "Anatomy",
+  emoji: "🦷",
+  solid: true,
+  build: () => {
+    const g = G();
+    box(g, 0.7, 0.5, 0.7, mat("#f8fafc", { roughness: 0.2 }), 0, 0.8, 0);
+    cyl(g, 0.14, 0.04, 0.8, mat("#fef08a"), -0.18, 0.4, 0);
+    cyl(g, 0.14, 0.04, 0.8, mat("#fef08a"), 0.18, 0.4, 0);
+    box(g, 0.55, 0.4, 0.04, mat("#fde047"), 0, 0.8, 0.36);
+    box(g, 0.25, 0.24, 0.05, mat("#ef4444"), 0, 0.82, 0.37);
+    cyl(g, 0.03, 0.02, 0.7, mat("#dc2626"), -0.18, 0.42, 0.05);
+    cyl(g, 0.03, 0.02, 0.7, mat("#dc2626"), 0.18, 0.42, 0.05);
+    return g;
+  },
+});
+
+push({
+  id: "zack-swallowed-needle",
+  name: "Swallowed Surgical Needle",
+  cat: "Zack D. & Science",
+  sub: "Curiosities",
+  emoji: "🪡",
+  solid: false,
+  build: () => {
+    const g = G();
+    const curveGeo = new THREE.TorusGeometry(0.5, 0.025, 12, 32, Math.PI * 0.85);
+    const m = mat("#e2e8f0", { metalness: 0.95, roughness: 0.1 });
+    add(g, curveGeo, m, 0, 0.5, 0, 0, 0, Math.PI * 0.2);
+    add(g, new THREE.ConeGeometry(0.035, 0.12, 10), m, -0.42, 0.75, 0, 0, 0, -Math.PI * 0.3);
+    cyl(g, 0.015, 0.015, 0.8, mat("#38bdf8"), 0.45, 0.2, 0, "z");
+    return g;
+  },
+});
+
+push({
+  id: "zack-capsule",
+  name: "Dissolving Medicine Capsule",
+  cat: "Zack D. & Science",
+  sub: "Medical",
+  emoji: "💊",
+  solid: false,
+  build: () => {
+    const g = G();
+    cyl(g, 0.22, 0.22, 0.45, mat("#dc2626", { roughness: 0.2 }), 0, 0.45, 0);
+    add(g, new THREE.SphereGeometry(0.22, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat("#dc2626", { roughness: 0.2 }), 0, 0.675, 0);
+    cyl(g, 0.22, 0.22, 0.45, mat("#f8fafc", { roughness: 0.2 }), 0, 0, 0);
+    add(g, new THREE.SphereGeometry(0.22, 16, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat("#f8fafc", { roughness: 0.2 }), 0, -0.225, 0);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ball(g, 0.035, mat(i % 2 === 0 ? "#dc2626" : "#facc15"), Math.cos(a) * 0.35, 0.2 + Math.sin(i) * 0.15, Math.sin(a) * 0.35);
+    }
+    return g;
+  },
+});
+
+push({
+  id: "zack-bone-fracture",
+  name: "Fractured Femur Bone",
+  cat: "Zack D. & Science",
+  sub: "Anatomy",
+  emoji: "🦴",
+  solid: true,
+  build: () => {
+    const g = G();
+    const boneMat = mat("#f1f5f9", { roughness: 0.4 });
+    cyl(g, 0.15, 0.16, 0.9, boneMat, 0, 0.45, 0);
+    const upG = new THREE.Group();
+    upG.position.set(0.04, 0.9, 0);
+    upG.rotation.z = 0.08;
+    cyl(upG, 0.16, 0.15, 0.9, boneMat, 0, 0.45, 0);
+    ball(upG, 0.22, boneMat, -0.12, 0.95, 0);
+    ball(upG, 0.22, boneMat, 0.12, 0.95, 0);
+    g.add(upG);
+    ball(g, 0.22, boneMat, -0.12, 0.05, 0);
+    ball(g, 0.22, boneMat, 0.12, 0.05, 0);
+    cyl(g, 0.08, 0.08, 0.1, mat("#be123c"), 0.02, 0.9, 0);
+    return g;
+  },
+});
+
+push({
+  id: "zack-bacteria",
+  name: "Microscopic Germ / Cell",
+  cat: "Zack D. & Science",
+  sub: "Microbiology",
+  emoji: "🦠",
+  solid: false,
+  mech: { type: "spin", speed: 0.5, amount: 1, axis: "y" },
+  build: () => {
+    const g = G();
+    const bodyM = mat("#10b981", { transparent: true, opacity: 0.75, roughness: 0.3 });
+    ball(g, 0.55, bodyM, 0, 0.7, 0);
+    ball(g, 0.28, glow("#34d399"), 0, 0.7, 0);
+    for (let i = 0; i < 18; i++) {
+      const phi = Math.acos(-1 + (2 * i) / 18);
+      const theta = Math.sqrt(18 * Math.PI) * phi;
+      const dir = new THREE.Vector3(
+        Math.cos(theta) * Math.sin(phi),
+        Math.sin(theta) * Math.sin(phi),
+        Math.cos(phi)
+      );
+      const spike = cyl(g, 0.02, 0.04, 0.28, mat("#059669"), dir.x * 0.65, 0.7 + dir.y * 0.65, dir.z * 0.65);
+      spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      ball(g, 0.04, glow("#a7f3d0"), dir.x * 0.8, 0.7 + dir.y * 0.8, dir.z * 0.8);
+    }
+    return g;
+  },
+});
+
+push({
+  id: "zack-scalpel",
+  name: "Surgical Scalpel",
+  cat: "Zack D. & Science",
+  sub: "Medical",
+  emoji: "🔪",
+  solid: false,
+  build: () => {
+    const g = G();
+    box(g, 0.12, 1.2, 0.04, mat("#94a3b8", { metalness: 0.85, roughness: 0.2 }), 0, 0.6, 0);
+    const bladeGeo = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      -0.05, 1.2, 0,
+      0.05, 1.2, 0,
+      -0.05, 1.7, 0,
+      0.05, 1.2, 0,
+      0.0, 1.65, 0,
+      -0.05, 1.7, 0,
+    ]);
+    bladeGeo.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    bladeGeo.computeVertexNormals();
+    add(g, bladeGeo, mat("#f1f5f9", { metalness: 0.95, roughness: 0.05, side: THREE.DoubleSide }), 0, 0, 0);
+    return g;
+  },
+});
+
+push({
+  id: "zack-magnifier",
+  name: "Macro Inspection Lens",
+  cat: "Zack D. & Science",
+  sub: "Curiosities",
+  emoji: "🔍",
+  solid: false,
+  build: () => {
+    const g = G();
+    add(g, new THREE.TorusGeometry(0.5, 0.06, 16, 40), mat("#f59e0b", { metalness: 0.7, roughness: 0.2 }), 0, 1.0, 0);
+    ball(g, 0.48, glass(), 0, 1.0, 0, 1, 1, 0.15);
+    cyl(g, 0.06, 0.07, 0.65, mat("#78350f"), 0, 0.32, 0);
+    return g;
+  },
+});
+
+/* ------------------------------------------------------------------ */
 /* Exports                                                              */
 /* ------------------------------------------------------------------ */
 
 export const ASSETS: AssetDef[] = defs;
 export const ASSET_MAP: Record<string, AssetDef> = Object.fromEntries(defs.map((d) => [d.id, d]));
-export const ASSET_CATS: AssetCat[] = ["Nature", "Buildings", "Roads & Streets", "Vehicles", "Props", "Mechanics", "Shapes"];
+export const ASSET_CATS: AssetCat[] = ["Nature", "Buildings", "Roads & Streets", "Vehicles", "Props", "Mechanics", "Shapes", "Zack D. & Science"];
 
 export interface Proto {
   proto: THREE.Group;

@@ -162,6 +162,83 @@ export function fitAspect(boxW: number, boxH: number, ratio: number) {
   return { w: boxW, h: boxW / ratio };
 }
 
+function FilmShadingStrip() {
+  const shading = useStore((s) => s.shading);
+  const setShading = useStore((s) => s.setShading);
+  const xrayOpacity = useStore((s) => s.xrayOpacity);
+  const setXrayOpacity = useStore((s) => s.setXrayOpacity);
+  const setCamPreset = useStore((s) => s.setCamPreset);
+
+  return (
+    <div className="pointer-events-auto absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-black/75 p-1 backdrop-blur border border-white/10 shadow-xl z-20">
+      <div className="flex items-center gap-0.5 rounded-md bg-white/5 p-0.5">
+        <button
+          onClick={() => setShading("wireframe")}
+          title="Wireframe View"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "wireframe" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          🌐
+        </button>
+        <button
+          onClick={() => setShading("solid")}
+          title="Solid View"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "solid" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          ⚪
+        </button>
+        <button
+          onClick={() => setShading("material")}
+          title="Material Preview"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "material" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          🎨
+        </button>
+        <button
+          onClick={() => setShading(shading === "xray" ? "material" : "xray")}
+          title="Zack D. X-Ray & Cutaway"
+          className={`flex h-6 px-1.5 items-center gap-1 rounded text-xs transition font-semibold ${
+            shading === "xray" ? "bg-cyan-400 text-black shadow animate-pulse" : "text-cyan-200 hover:bg-cyan-500/20"
+          }`}
+        >
+          <span>🩻</span>
+          <span className="text-[10px]">X-Ray</span>
+        </button>
+      </div>
+
+      {shading === "xray" && (
+        <div className="flex items-center gap-1.5 px-1 border-l border-white/10">
+          <span className="text-[10px] text-cyan-300 font-medium">Cutaway</span>
+          <input
+            type="range"
+            min={0.1}
+            max={0.8}
+            step={0.05}
+            value={xrayOpacity}
+            onChange={(e) => setXrayOpacity(parseFloat(e.target.value))}
+            className="w-14 h-1 accent-cyan-400 bg-white/20 rounded cursor-pointer"
+            title={`Cutaway opacity: ${Math.round(xrayOpacity * 100)}%`}
+          />
+        </div>
+      )}
+
+      <button
+        onClick={() => setCamPreset("close")}
+        title="Zack D. Macro Camera Glide (Extreme Close-Up)"
+        className="flex items-center gap-1 rounded bg-gradient-to-r from-red-500/30 to-amber-500/30 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-200 hover:brightness-125"
+      >
+        <span>🎬</span>
+        <span>Macro Glide</span>
+      </button>
+    </div>
+  );
+}
+
 export function SceneView() {
   const aspect = useStore((s) => s.aspect);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -201,6 +278,7 @@ export function SceneView() {
           <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-200">{aspect}</span>
           <span className="rounded bg-cyan-500/80 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-black">FILM</span>
         </div>
+        <FilmShadingStrip />
       </div>
     </div>
   );

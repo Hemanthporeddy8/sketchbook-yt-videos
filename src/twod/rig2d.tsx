@@ -1085,6 +1085,89 @@ export function applyFigure(d: FigDom, f: ActorFrame, groundY: number, scale: nu
 /* React figure                                                     */
 /* ---------------------------------------------------------------- */
 
+function FigureCreature({ actor, rf, d }: { actor: Actor2D; rf: RefFn; d: FigDom }) {
+  const cr = actor.creature;
+  if (!cr) return null;
+
+  const faceTag = cr.tags.find((t) => t.type === "face");
+  const trunkTag = cr.tags.find((t) => t.type === "trunk");
+  const tailTag = cr.tags.find((t) => t.type === "tail");
+  const earTag = cr.tags.find((t) => t.type === "ear");
+
+  const W = 220;
+  const H = 160;
+  const ox = -W * 0.5;
+  const oy = -H;
+
+  return (
+    <>
+      {/* Far Back Legs (behind body) */}
+      <g ref={rf("bLeg2")} transform="translate(-40 -40)">
+        <rect x={-8} y={0} width={16} height={42} rx={6} fill="rgba(0,0,0,0.3)" />
+      </g>
+      <g ref={rf("fLeg2")} transform="translate(40 -40)">
+        <rect x={-8} y={0} width={16} height={42} rx={6} fill="rgba(0,0,0,0.3)" />
+      </g>
+
+      {/* Main Drawn Animal Body Image */}
+      <image
+        href={cr.drawingUrl}
+        x={ox}
+        y={oy}
+        width={W}
+        height={H}
+        preserveAspectRatio="xMidYMid meet"
+      />
+
+      {/* Dynamic Animated Parts */}
+      {tailTag && (
+        <g ref={rf("tail")} transform={`translate(${ox + tailTag.x * W} ${oy + tailTag.y * H})`}>
+          <line x1={0} y1={0} x2={-18} y2={24} stroke="#334155" strokeWidth={5} strokeLinecap="round" />
+        </g>
+      )}
+
+      {/* Near Legs (in front of body) */}
+      <g ref={rf("bLeg")} transform="translate(-48 -40)">
+        <rect x={-9} y={0} width={18} height={44} rx={6} fill="#475569" stroke="#1e293b" strokeWidth={2} />
+      </g>
+      <g ref={rf("fLeg")} transform="translate(32 -40)">
+        <rect x={-9} y={0} width={18} height={44} rx={6} fill="#475569" stroke="#1e293b" strokeWidth={2} />
+      </g>
+
+      {/* Face & Blinking Eyes & Mouth */}
+      {faceTag && (
+        <g transform={`translate(${ox + faceTag.x * W} ${oy + faceTag.y * H})`}>
+          <ellipse ref={(el) => { d.eyeL = el; }} cx={-6} cy={0} rx={4.5} ry={4.5} fill="#ffffff" stroke="#1e293b" strokeWidth={1.5} />
+          <ellipse ref={(el) => { d.eyeR = el; }} cx={8} cy={-2} rx={4.5} ry={4.5} fill="#ffffff" stroke="#1e293b" strokeWidth={1.5} />
+          <circle ref={(el) => { d.pupilL = el; }} cx={-5.5} cy={0} r={2} fill="#1e293b" />
+          <circle ref={(el) => { d.pupilR = el; }} cx={8.5} cy={-2} r={2} fill="#1e293b" />
+          <path ref={(el) => { d.mouth = el; }} d="M -4 8 Q 2 12 8 8" fill="none" stroke="#1e293b" strokeWidth={2} strokeLinecap="round" />
+        </g>
+      )}
+
+      {/* Flexible Trunk / Snout */}
+      {trunkTag && (
+        <g ref={rf("head")} transform={`translate(${ox + trunkTag.x * W} ${oy + trunkTag.y * H})`}>
+          <path
+            d="M 0 0 Q 18 12 14 36 Q 10 44 2 40"
+            fill="none"
+            stroke="#64748b"
+            strokeWidth={10}
+            strokeLinecap="round"
+          />
+        </g>
+      )}
+
+      {/* Floppy Ear */}
+      {earTag && (
+        <g transform={`translate(${ox + earTag.x * W} ${oy + earTag.y * H})`}>
+          <ellipse cx={0} cy={6} rx={16} ry={22} fill="#94a3b8" stroke="#475569" strokeWidth={2.5} opacity={0.9} />
+        </g>
+      )}
+    </>
+  );
+}
+
 export function Figure2D({
   actor,
   selected,
@@ -1114,7 +1197,9 @@ export function Figure2D({
       <g ref={(el) => { d.outer = el; }} data-actor={actor.id} onPointerDown={onDown} style={{ cursor: "grab" }}>
         <ellipse cx={0} cy={3} rx={animal ? 74 : 78} ry={12} fill="rgba(0,0,0,0.28)" />
         {selected && <ellipse cx={0} cy={3} rx={animal ? 92 : 92} ry={18} fill="none" stroke="#e87d0d" strokeWidth={3} strokeDasharray="8 6" />}
-        {animal ? (
+        {actor.species === "creature" && actor.creature ? (
+          <FigureCreature actor={actor} rf={rf} d={d} />
+        ) : animal ? (
           <FigureAnimal actor={actor} rf={rf} d={d} />
         ) : (
           <FigureHuman actor={actor} rf={rf} d={d} />
@@ -1144,19 +1229,34 @@ export function CharacterPreviewSVG({
   app: a,
   species = "human",
   heldProp,
+  creatureDrawing,
   className = "h-28 w-24",
 }: {
   app: Appearance;
   species?: Species;
   heldProp?: number;
+  creatureDrawing?: string;
   className?: string;
 }) {
   const prevPatId = useRef(`prev-pat-${Math.random().toString(36).slice(2, 7)}`).current;
 
+  if (species === "creature") {
+    return (
+      <div className={`flex flex-col items-center justify-center rounded-lg bg-black/40 p-2 ${className}`}>
+        {creatureDrawing ? (
+          <img src={creatureDrawing} alt="Creature" className="h-16 w-20 object-contain" />
+        ) : (
+          <span className="text-4xl">🐘</span>
+        )}
+        <span className="mt-1 text-[11px] font-semibold text-cyan-300">Custom Animal</span>
+      </div>
+    );
+  }
+
   if (species !== "human" && species !== "girl") {
     return (
       <div className={`flex flex-col items-center justify-center rounded-lg bg-black/40 p-2 ${className}`}>
-        <span className="text-4xl">{species === "cat" ? "🐱" : species === "dog" ? "🐶" : species === "bird" ? "🐦" : species === "rabbit" ? "🐰" : species === "fox" ? "🦊" : species === "bear" ? "🐻" : species === "pig" ? "🐷" : "🐼"}</span>
+        <span className="text-4xl">{species === "cat" ? "🐱" : species === "dog" ? "🐶" : species === "bird" ? "🐦" : species === "rabbit" ? "🐰" : species === "fox" ? "🦊" : species === "bear" ? "🐻" : species === "pig" ? "🐷" : species === "panda" ? "🐼" : "🐘"}</span>
         <span className="mt-1 text-[11px] font-semibold capitalize text-slate-300">{species}</span>
       </div>
     );

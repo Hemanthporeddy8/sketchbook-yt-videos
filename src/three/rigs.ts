@@ -228,37 +228,76 @@ function buildHuman(c: CharacterConfig): RigInstance {
   const bw = 0.42 * c.build;
   const shX = bw / 2 + 0.04;
 
+  const boneWhite = M("#f8fafc", 0.4);
+  const organHeart = M("#dc2626", 0.3);
+  const organStomach = M("#e11d48", 0.4);
+  const anatMesh = (geo: THREE.BufferGeometry, mat: THREE.Material, p: [number, number, number] = [0, 0, 0], r?: [number, number, number]) => {
+    const m = Mesh(geo, mat, p, r);
+    m.userData.isAnatomy = true;
+    m.visible = false;
+    return m;
+  };
+
   const hips = B("hips", root, 0, 0.95, 0);
   const spine = B("spine", hips, 0, 0.12, 0);
   const neck = B("neck", spine, 0, 0.55, 0);
   const head = B("head", neck, 0, 0.22, 0);
   head.scale.setScalar(c.headScale);
 
+  // Outer torso & internal anatomy
   spine.add(Mesh(new THREE.BoxGeometry(bw, 0.55, 0.26 * c.build), top, [0, 0.275, 0]));
+  // Vertebrae spinal column
+  spine.add(anatMesh(new THREE.CylinderGeometry(0.035, 0.04, 0.52, 10), boneWhite, [0, 0.26, -0.05]));
+  // Ribcage wraps around chest
+  for (let i = 0; i < 4; i++) {
+    const y = 0.16 + i * 0.09;
+    const rW = bw * 0.72 * (1 - i * 0.06);
+    spine.add(anatMesh(new THREE.TorusGeometry(rW * 0.5, 0.016, 8, 16, Math.PI), boneWhite, [0, y, 0], [Math.PI / 2, 0, 0]));
+  }
+  // Internal Organs (Heart & Stomach)
+  spine.add(anatMesh(new THREE.SphereGeometry(0.055, 10, 8), organHeart, [-0.05, 0.32, 0.02]));
+  spine.add(anatMesh(new THREE.SphereGeometry(0.065, 10, 8), organStomach, [0.04, 0.18, 0.02]));
+
+  // Hips outer & pelvis bone
   hips.add(Mesh(new THREE.BoxGeometry(bw * 0.9, 0.16, 0.24), bottom, [0, -0.02, 0]));
+  hips.add(anatMesh(new THREE.TorusGeometry(bw * 0.3, 0.022, 8, 16), boneWhite, [0, 0.02, 0], [Math.PI / 2, 0, 0]));
+
   neck.add(Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.1, 12), skin, [0, -0.03, 0]));
+  neck.add(anatMesh(new THREE.CylinderGeometry(0.03, 0.035, 0.1, 8), boneWhite, [0, -0.03, 0]));
 
   for (const side of [1, -1]) {
     const p = side > 0 ? "l" : "r";
     const up = B(`${p}UpperArm`, spine, side * shX, 0.5, 0);
     spine.add(Mesh(new THREE.SphereGeometry(0.07, 12, 10), top, [side * shX, 0.5, 0]));
     up.add(Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.32, 10), top, [0, -0.16, 0]));
+    up.add(anatMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.28, 8), boneWhite, [0, -0.16, 0]));
+
     const lo = B(`${p}LowerArm`, up, 0, -0.32, 0);
     lo.add(Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.3, 10), top, [0, -0.15, 0]));
+    lo.add(anatMesh(new THREE.CylinderGeometry(0.018, 0.018, 0.26, 8), boneWhite, [0, -0.15, 0]));
+
     const hand = B(`${p}Hand`, lo, 0, -0.3, 0);
     hand.add(Mesh(new THREE.SphereGeometry(0.06, 12, 10), skin, [0, -0.06, 0]));
 
     const legX = 0.1 * c.build;
     const ul = B(`${p}UpperLeg`, hips, side * legX, -0.02, 0);
     ul.add(Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.42, 10), bottom, [0, -0.21, 0]));
+    ul.add(anatMesh(new THREE.CylinderGeometry(0.03, 0.028, 0.36, 8), boneWhite, [0, -0.21, 0]));
+
     const ll = B(`${p}LowerLeg`, ul, 0, -0.42, 0);
     ll.add(Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.4, 10), bottom, [0, -0.2, 0]));
+    ll.add(anatMesh(new THREE.CylinderGeometry(0.026, 0.024, 0.34, 8), boneWhite, [0, -0.2, 0]));
+
     const foot = B(`${p}Foot`, ll, 0, -0.42, 0);
     foot.add(Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.27), shoes, [0, -0.04, 0.05]));
   }
 
-  // Head
+  // Head outer & internal skull anatomy
   head.add(Mesh(new THREE.SphereGeometry(0.22, 28, 20), skin));
+  head.add(anatMesh(new THREE.SphereGeometry(0.18, 16, 12), boneWhite));
+  head.add(anatMesh(new THREE.SphereGeometry(0.042, 8, 8), M("#0f172a"), [0.075, 0.02, 0.14]));
+  head.add(anatMesh(new THREE.SphereGeometry(0.042, 8, 8), M("#0f172a"), [-0.075, 0.02, 0.14]));
+  head.add(anatMesh(new THREE.BoxGeometry(0.11, 0.035, 0.06), boneWhite, [0, -0.08, 0.13]));
   for (const s of [1, -1]) head.add(Mesh(new THREE.SphereGeometry(0.05, 10, 8), skin, [s * 0.215, 0, 0]));
   head.add(Mesh(new THREE.SphereGeometry(0.035, 10, 8), skin, [0, -0.02, 0.215]));
   const eyeX = 0.085;
@@ -676,4 +715,35 @@ export function blendPose(rig: RigInstance, rot: Record<string, [number, number,
 
 export function applyFaceToRig(rig: RigInstance, s: FaceState) {
   applyFace(rig.face, s);
+}
+
+/**
+ * Toggles Zack D. Films style X-Ray & Cutaway anatomy mode or Blender wireframe mode.
+ */
+export function applyXrayMode(root: THREE.Object3D, xray: boolean, opacity = 0.45, wireframe = false) {
+  root.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh)) return;
+    if (obj.userData.isAnatomy) {
+      obj.visible = xray;
+      return;
+    }
+    const m = obj.material as THREE.MeshStandardMaterial;
+    if (!m) return;
+    if (wireframe) {
+      m.wireframe = true;
+      m.transparent = false;
+      m.opacity = 1.0;
+      return;
+    }
+    m.wireframe = false;
+    if (xray) {
+      m.transparent = true;
+      m.opacity = opacity;
+      m.depthWrite = false;
+    } else {
+      m.transparent = false;
+      m.opacity = 1.0;
+      m.depthWrite = true;
+    }
+  });
 }

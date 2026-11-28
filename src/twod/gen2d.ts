@@ -144,6 +144,7 @@ export const SPECIES_LIST: { id: Species; label: string; emoji: string }[] = [
   { id: "bear", label: "Bear", emoji: "🐻" },
   { id: "pig", label: "Pig", emoji: "🐷" },
   { id: "panda", label: "Panda", emoji: "🐼" },
+  { id: "creature", label: "Custom Animal", emoji: "🐘" },
 ];
 export const isAnimal = (sp: Species) => sp !== "human" && sp !== "girl";
 

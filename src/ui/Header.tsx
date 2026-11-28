@@ -90,9 +90,7 @@ export function Header() {
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/5 bg-[#0b0d13] px-3">
       <div className="flex items-center gap-2 pr-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-violet-600 shadow-lg shadow-cyan-900/40">
-          <Clapperboard className="h-4 w-4 text-white" />
-        </div>
+        <img src="/icons/icon-192.png" alt="Editroy" className="h-8 w-8 rounded-lg object-contain shadow-lg shadow-cyan-900/30" />
         <div className="leading-tight">
           <div className="text-sm font-extrabold tracking-tight text-white">PixelStage</div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-slate-500">Studio</div>

@@ -1,6 +1,25 @@
 /* Types for the 2D animation studio. */
 
-export type Species = "human" | "girl" | "cat" | "dog" | "bird" | "rabbit" | "fox" | "bear" | "pig" | "panda";
+export type Species = "human" | "girl" | "cat" | "dog" | "bird" | "rabbit" | "fox" | "bear" | "pig" | "panda" | "creature";
+
+export interface CreatureTag {
+  id: string;
+  type: "face" | "trunk" | "leg" | "tail" | "ear";
+  x: number; // 0..1 normalized coordinate on the canvas
+  y: number; // 0..1 normalized coordinate on the canvas
+  x2?: number; // end point for trunk or tail
+  y2?: number;
+  label?: string;
+  subType?: "fl" | "fr" | "bl" | "br";
+}
+
+export interface CreatureData {
+  drawingUrl: string;
+  tags: CreatureTag[];
+  isQuadruped?: boolean;
+  hasTrunk?: boolean;
+  name?: string;
+}
 
 export interface Appearance {
   skin: string;
@@ -52,6 +71,7 @@ export interface Actor2D {
   voiceRate?: number;  // 0.5 to 1.8 (default 1.0)
   voiceLang?: string;  // e.g. "en-US", "en-IN", "en-GB"
   voiceURI?: string;   // specific browser voice
+  creature?: CreatureData; // custom drawn animal & semantic tagged rig data
 }
 
 export type CharacterVoicePreset = "female" | "male" | "kid" | "monk" | "robot" | "cartoon";

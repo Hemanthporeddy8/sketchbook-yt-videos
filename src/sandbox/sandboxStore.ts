@@ -274,6 +274,8 @@ export interface SandboxState {
   camCmd: { preset: string; nonce: number };
   camMode: CamMode;
   drawerOpen: boolean;
+  shading: "solid" | "wireframe" | "material" | "xray";
+  xrayOpacity: number;
 
   actors: SActor[];
   playerId: string | null;
@@ -281,6 +283,9 @@ export interface SandboxState {
   scriptRunning: boolean;
   scriptRepeat: boolean;
   convo: Convo | null;
+
+  setShading: (s: "solid" | "wireframe" | "material" | "xray") => void;
+  setXrayOpacity: (o: number) => void;
 
   setSbCam: (preset: string) => void;
   setCamMode: (m: CamMode) => void;
@@ -349,6 +354,8 @@ export const useSandbox = create<SandboxState>()(
       camCmd: { preset: "wide", nonce: 0 },
       camMode: "orbit",
       drawerOpen: false,
+      shading: "material",
+      xrayOpacity: 0.45,
 
       actors: starterActors(),
       playerId: PLAYER_ID,
@@ -356,6 +363,9 @@ export const useSandbox = create<SandboxState>()(
       scriptRunning: false,
       scriptRepeat: false,
       convo: null,
+
+      setShading: (s) => set({ shading: s }),
+      setXrayOpacity: (o) => set({ xrayOpacity: o }),
 
       setSbCam: (preset) => {
         if (preset === "chase") {

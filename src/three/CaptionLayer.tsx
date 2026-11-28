@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useStore } from "../store";
 import { usePlayback } from "../playback";
+import { speakBrowser } from "../twod/speech2d";
 
 /*
  * Captions are drawn to a 2D canvas and shown as a texture on a camera-facing plane.
@@ -81,10 +82,19 @@ export function CaptionLayer() {
   const fwd = useMemo(() => new THREE.Vector3(), []);
   const up = useMemo(() => new THREE.Vector3(), []);
 
+  const playing = usePlayback((s) => s.playing);
+  const spokenRef = useRef("");
+
   useEffect(() => {
     drawCaption(canvas, text);
     tex.needsUpdate = true;
-  }, [text, canvas, tex]);
+    if (playing && text && text !== spokenRef.current) {
+      spokenRef.current = text;
+      speakBrowser(text, { expression: "excited" });
+    } else if (!text) {
+      spokenRef.current = "";
+    }
+  }, [text, canvas, tex, playing]);
 
   useEffect(() => () => tex.dispose(), [tex]);
 

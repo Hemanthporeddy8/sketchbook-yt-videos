@@ -1,6 +1,7 @@
 import { blocked, ensureWalker, grabObject, nearestGrabbable, poseOf, releaseHeld, RUN_SPEED, sim, stepWalker, WALK_SPEED, type Ctx, type Walker } from "./sim";
 import { cam } from "./camera";
 import { useSandbox, type Cmd, type SActor, type SObject, type Target } from "./sandboxStore";
+import { speakBrowser } from "../twod/speech2d";
 
 /*
  * NPC brain: command lists, idle behaviours, path planning and conversations.
@@ -47,6 +48,10 @@ export function testPerform(id: string, stance: string, gesture: string, seconds
 
 function say(id: string, text: string, secs: number) {
   script.bubbles.set(id, { text, until: sim.t + secs });
+  if (text && text.trim()) {
+    const expr = script.expr.get(id) ?? "happy";
+    speakBrowser(text, { expression: expr });
+  }
 }
 
 function perform(id: string, stance: string, gesture: string, secs: number) {

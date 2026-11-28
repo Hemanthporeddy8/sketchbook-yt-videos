@@ -19,6 +19,7 @@ import { cn } from "../utils/cn";
 import MiniFigure from "./MiniFigure";
 import { CharacterPreviewSVG } from "./rig2d";
 import { DressDrawModal } from "./DressDrawModal";
+import { CreatureStudio } from "./CreatureStudio";
 import { generateSpeechAudioTake, getEmotionVoiceTuning, getSystemVoices, speakBrowser } from "./speech2d";
 
 /* ---------------------------------------------------------------- */
@@ -408,10 +409,14 @@ function CharactersTab() {
   const count = useStudio2d((s) => s.actors.length);
   const [species, setSpecies] = useState<Species>("girl");
   const [designerOpen, setDesignerOpen] = useState(false);
+  const [creatureStudioOpen, setCreatureStudioOpen] = useState(false);
   const sp = SPECIES_LIST.find((s) => s.id === species) ?? SPECIES_LIST[0];
 
   if (designerOpen) {
     return <CustomCharacterDesigner onDone={() => setDesignerOpen(false)} />;
+  }
+  if (creatureStudioOpen) {
+    return <CreatureStudio onClose={() => setCreatureStudioOpen(false)} />;
   }
 
   return (
@@ -423,6 +428,14 @@ function CharactersTab() {
         >
           <Palette className="h-4 w-4 text-[#ffb36b]" />
           <span>🎨 Design Custom Character & Dress</span>
+        </button>
+
+        <button
+          onClick={() => setCreatureStudioOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/50 bg-gradient-to-r from-cyan-600/25 to-blue-600/25 py-2.5 text-xs font-bold text-cyan-200 shadow-lg hover:from-cyan-600/40 hover:to-blue-600/40"
+        >
+          <Sparkles className="h-4 w-4 text-cyan-300" />
+          <span>🐘 Draw Any Animal & Tag Parts</span>
         </button>
 
         <div className="rounded-md border border-emerald-400/25 bg-emerald-500/5 p-2">
@@ -902,7 +915,7 @@ function ActorEditor({ id }: { id: string }) {
       <input value={actor.name} onChange={(e) => patchActor(id, { name: e.target.value })} className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-slate-100 outline-none focus:border-[#e87d0d]/70" />
 
       <div className="flex justify-center p-1 bg-black/30 rounded-lg border border-white/5">
-        <CharacterPreviewSVG app={a} species={actor.species} heldProp={actor.heldProp} className="h-32 w-28" />
+        <CharacterPreviewSVG app={a} species={actor.species} heldProp={actor.heldProp} creatureDrawing={actor.creature?.drawingUrl} className="h-32 w-28" />
       </div>
 
       {!animal ? (

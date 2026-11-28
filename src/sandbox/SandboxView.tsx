@@ -27,7 +27,7 @@ import {
 import { cam, lookDir, moveVec, type CamMode } from "./camera";
 import { locoPose } from "./locomotion";
 import { SkyDome, worldById, type WorldDef } from "../three/Worlds";
-import { applyFaceToRig, blendPose, buildRig } from "../three/rigs";
+import { applyFaceToRig, applyXrayMode, blendPose, buildRig } from "../three/rigs";
 import { faceForActor } from "./actions";
 import { beginTalk, chooseTalk, endTalk, nearestNpc, script, testPerform, tickScripts } from "./scripts";
 import { installPointerUp, runtime, setPending } from "../three/runtime";
@@ -99,6 +99,15 @@ function ObjectView({ o, selected, editable }: { o: SObject; selected: boolean; 
     return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xfacc15 }));
   }, [o.assetId]);
   const gizmo = useSandbox((s) => s.gizmo);
+  const shading = useSandbox((s) => s.shading);
+
+  useEffect(() => {
+    inst.traverse((c) => {
+      if (c instanceof THREE.Mesh && c.material) {
+        c.material.wireframe = shading === "wireframe";
+      }
+    });
+  }, [inst, shading]);
 
   useLayoutEffect(() => {
     refs.set(o.id, gRef.current);
@@ -323,9 +332,15 @@ function ActorView({ a, selected, editable }: { a: SActor; selected: boolean; ed
   const g = useRef<THREE.Group>(null!);
   const isPlayer = useSandbox((s) => s.playerId === a.id);
   const camMode = useSandbox((s) => s.camMode);
+  const shading = useSandbox((s) => s.shading);
+  const xrayOpacity = useSandbox((s) => s.xrayOpacity);
   const patchActor = useSandbox((s) => s.patchActor);
   const setEditing = useSandbox((s) => s.setEditing);
   useEffect(() => () => rig.dispose(), [rig]);
+
+  useEffect(() => {
+    applyXrayMode(rig.root, shading === "xray", xrayOpacity, shading === "wireframe");
+  }, [rig, shading, xrayOpacity]);
 
   useFrame((_, dt) => {
     const grp = g.current;
@@ -809,19 +824,39 @@ function SandboxScene() {
           st.setTool("select");
           return;
         }
-        if (k === "w" && !mod) {
+        if ((k === "w" || k === "g") && !mod) {
           st.setTool("select");
           st.setGizmo("translate");
           return;
         }
-        if (k === "e" && !mod) {
+        if ((k === "e" || (k === "r" && !e.shiftKey)) && !mod) {
           st.setTool("select");
           st.setGizmo("rotate");
           return;
         }
-        if (k === "r" && !mod) {
+        if (k === "s" && !mod) {
           st.setTool("select");
           st.setGizmo("scale");
+          return;
+        }
+        if (k === "z" && !mod && !e.altKey) {
+          st.setShading(st.shading === "wireframe" ? "material" : "wireframe");
+          return;
+        }
+        if (k === "z" && (e.altKey || mod)) {
+          st.setShading(st.shading === "xray" ? "material" : "xray");
+          return;
+        }
+        if (k === "1" || k === "numpad1") {
+          st.setSbCam("front");
+          return;
+        }
+        if (k === "3" || k === "numpad3") {
+          st.setSbCam("side");
+          return;
+        }
+        if (k === "7" || k === "numpad7") {
+          st.setSbCam("top");
           return;
         }
         if (k === "[" || k === "]") {
@@ -926,6 +961,92 @@ function ModeBar() {
           {it.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Blender-style shading strip (Wireframe, Solid, Material, Zack D. X-Ray & Cutaway). */
+function BlenderShadingStrip({ play, aspect }: { play: boolean; aspect: string }) {
+  const shading = useSandbox((s) => s.shading);
+  const setShading = useSandbox((s) => s.setShading);
+  const xrayOpacity = useSandbox((s) => s.xrayOpacity);
+  const setXrayOpacity = useSandbox((s) => s.setXrayOpacity);
+  const setSbCam = useSandbox((s) => s.setSbCam);
+
+  return (
+    <div className="pointer-events-auto absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-black/75 p-1 backdrop-blur border border-white/10 shadow-xl z-20">
+      {/* 4 Blender Shading Modes */}
+      <div className="flex items-center gap-0.5 rounded-md bg-white/5 p-0.5">
+        <button
+          onClick={() => setShading("wireframe")}
+          title="Wireframe View (Z)"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "wireframe" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          🌐
+        </button>
+        <button
+          onClick={() => setShading("solid")}
+          title="Solid Clay View"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "solid" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          ⚪
+        </button>
+        <button
+          onClick={() => setShading("material")}
+          title="Material Preview"
+          className={`flex h-6 w-6 items-center justify-center rounded text-xs transition ${
+            shading === "material" ? "bg-amber-400 text-black font-bold shadow" : "text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          🎨
+        </button>
+        <button
+          onClick={() => setShading(shading === "xray" ? "material" : "xray")}
+          title="Zack D. X-Ray & Cutaway (Alt+Z)"
+          className={`flex h-6 px-1.5 items-center gap-1 rounded text-xs transition font-semibold ${
+            shading === "xray" ? "bg-cyan-400 text-black shadow animate-pulse" : "text-cyan-200 hover:bg-cyan-500/20"
+          }`}
+        >
+          <span>🩻</span>
+          <span className="text-[10px]">X-Ray</span>
+        </button>
+      </div>
+
+      {/* X-Ray Cutaway Opacity Slider */}
+      {shading === "xray" && (
+        <div className="flex items-center gap-1.5 px-1 border-l border-white/10">
+          <span className="text-[10px] text-cyan-300 font-medium">Cutaway</span>
+          <input
+            type="range"
+            min={0.1}
+            max={0.8}
+            step={0.05}
+            value={xrayOpacity}
+            onChange={(e) => setXrayOpacity(parseFloat(e.target.value))}
+            className="w-14 h-1 accent-cyan-400 bg-white/20 rounded cursor-pointer"
+            title={`Cutaway opacity: ${Math.round(xrayOpacity * 100)}%`}
+          />
+        </div>
+      )}
+
+      {/* Zack D. Macro Glide Camera Preset */}
+      <button
+        onClick={() => setSbCam("close")}
+        title="Zack D. Macro Camera Glide (Extreme Close-Up)"
+        className="flex items-center gap-1 rounded bg-gradient-to-r from-red-500/30 to-amber-500/30 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-200 hover:brightness-125"
+      >
+        <span>🎬</span>
+        <span>Macro</span>
+      </button>
+
+      <span className="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold text-slate-300">{aspect}</span>
+      <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${play ? "bg-emerald-500/90 text-black" : "bg-[#e87d0d]/90 text-black"}`}>
+        {play ? "PLAY" : "EDIT"}
+      </span>
     </div>
   );
 }
@@ -1063,12 +1184,7 @@ export function SandboxView() {
           </Canvas>
         )}
         <ModeBar />
-        <div className="pointer-events-none absolute right-2 top-2 flex gap-1.5">
-          <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-200">{aspect}</span>
-          <span className={`rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide ${play ? "bg-emerald-500/90 text-black" : "bg-[#e87d0d]/90 text-black"}`}>
-            {play ? "PLAY" : "EDIT"}
-          </span>
-        </div>
+        <BlenderShadingStrip play={play} aspect={aspect} />
         {showCross && <div className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/80 ring-2 ring-black/40" />}
         {play && <PlayHud />}
         <TalkPrompt />
